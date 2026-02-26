@@ -4,6 +4,7 @@ import logging
 import time
 from pathlib import Path
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from browser_use import Agent, Browser, BrowserConfig
 from dotenv import dotenv_values
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -32,6 +33,16 @@ USERNAME   = config.get("USERNAME")
 PASSWORD   = config.get("PASSWORD")
 GITHUB_URL = config.get("GITHUB_URL")
 
+# ── DRY RUN MODE ─────────────────────────────
+# Set to True  → agent will SHOW what it would do, but NOT actually send messages
+# Set to False → agent will actually send messages
+DRY_RUN = True
+
+# ── SCHEDULER TIME ────────────────────────────
+# Agent will run automatically every day at this time (24h format)
+SCHEDULE_HOUR   = 9   # 9 AM
+SCHEDULE_MINUTE = 0   # :00
+
 if not USERNAME or not PASSWORD:
     raise EnvironmentError(
         "❌ USERNAME or PASSWORD is missing in .env file. "
@@ -47,7 +58,6 @@ SESSION_MAX_AGE_HOURS = 12
 
 
 def session_is_valid() -> bool:
-    """Return True if a saved session exists and is still fresh."""
     if not SESSION_FILE.exists():
         return False
     try:
@@ -65,7 +75,6 @@ def session_is_valid() -> bool:
 
 
 def save_session_timestamp():
-    """Write a timestamp so we know when the session was saved."""
     existing = {}
     if SESSION_FILE.exists():
         try:
@@ -78,7 +87,7 @@ def save_session_timestamp():
 
 
 # ──────────────────────────────────────────────
-# 4. BROWSER (user-data-dir keeps cookies on disk)
+# 4. BROWSER
 # ──────────────────────────────────────────────
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 
@@ -97,9 +106,7 @@ llm = ChatGoogleGenerativeAI(model="models/gemini-2.5-flash-preview-04-17")
 
 
 # ──────────────────────────────────────────────
-# 6. PERSONALIZED REPLY TEMPLATES
-#    Used when someone sends YOU a birthday wish.
-#    {name} = sender's first name
+# 6. TEMPLATES
 # ──────────────────────────────────────────────
 PERSONALIZED_REPLY_TEMPLATES = [
     "Thanks so much, {name}! Really means a lot 😊",
@@ -109,11 +116,6 @@ PERSONALIZED_REPLY_TEMPLATES = [
     "Aww, thanks {name}! Really appreciate the birthday wishes 🎉",
 ]
 
-# ──────────────────────────────────────────────
-# 7. BIRTHDAY WISH TEMPLATES
-#    Used when YOU wish someone on their birthday.
-#    {name} = recipient's first name
-# ──────────────────────────────────────────────
 BIRTHDAY_WISH_TEMPLATES = [
     "Happy Birthday, {name}! 🎂 Hope your day is as amazing as you are!",
     "Wishing you a fantastic birthday, {name}! 🎉 Hope it's full of joy!",
@@ -124,15 +126,26 @@ BIRTHDAY_WISH_TEMPLATES = [
 
 
 # ──────────────────────────────────────────────
-# 8. TASK DEFINITIONS
+# 7. DRY RUN HELPER
 # ──────────────────────────────────────────────
-task_github = f"""
-  Open browser, then go to {GITHUB_URL} and tell me how many followers they have.
+def dry_run_notice() -> str:
+    """Returns extra instructions for the agent when DRY_RUN is enabled."""
+    if DRY_RUN:
+        return """
+  ⚠️  DRY RUN MODE IS ON ⚠️
+  Do NOT actually send any messages.
+  Instead, for each message you WOULD send, print:
+    [DRY RUN] Would send to <name>: "<message>"
+  Then move on without clicking Send.
+  At the end, summarize everything you would have done.
 """
+    return ""  # Normal mode — no extra instructions
 
 
+# ──────────────────────────────────────────────
+# 8. TASK BUILDERS
+# ──────────────────────────────────────────────
 def build_linkedin_reply_task(already_logged_in: bool) -> str:
-    """Task: Reply to birthday wishes people sent YOU."""
     login_instructions = (
         "You are already logged into LinkedIn. Skip the login step."
         if already_logged_in
@@ -152,52 +165,28 @@ def build_linkedin_reply_task(already_logged_in: bool) -> str:
     return f"""
   Open the browser.
   {login_instructions}
+  {dry_run_notice()}
 
   Once on LinkedIn:
   - Navigate to the main messaging page (https://www.linkedin.com/messaging/).
   - Examine each UNREAD message thread one by one (up to 15 threads).
 
-  For each thread, follow these steps:
-
   STEP 1 — Identify the sender's FIRST NAME.
-    Look at the name shown on the message thread header or profile.
-    Extract only the first name (e.g. if the name is "Rahul Ahmed", use "Rahul").
-
   STEP 2 — Check if it's a birthday wish.
-    It IS a birthday wish if the message contains phrases like:
-       "Happy birthday", "HBD", "Many happy returns", "Hope your day is great",
-       "Congrats on your special day", "Wishing you a wonderful birthday", etc.
-
-    It is NOT a birthday wish if it contains anything else — questions,
-    business topics, job offers, or general greetings unrelated to birthday.
+    YES: "Happy birthday", "HBD", "Many happy returns", "Hope your day is great", etc.
+    NO:  Anything else — questions, business, job offers, unrelated greetings.
 
   STEP 3 — Reply or Skip.
-    If it IS a birthday wish:
-       Choose ONE reply from the templates below and fill in {{name}} with
-       the sender's actual first name:
-
+    If YES → choose ONE template, fill in {{name}}, send (or log if DRY RUN):
 {reply_templates_str}
 
-       Example: if sender is "Rahul" and you pick template 1,
-       send: "Thanks so much, Rahul! Really means a lot 😊"
+    If NO → open thread (mark as read) and move on.
 
-       Pick templates randomly — do NOT always use template 1.
-
-    If it is NOT a birthday wish:
-       Do NOT reply. Just open the thread (mark as read) and move on.
-
-  Accuracy first — it is better to skip a birthday wish than to
-  accidentally reply to an unrelated message.
-
-  At the end, provide a summary:
-    - How many birthday wishes were replied to (list sender names)
-    - How many threads were skipped
-    - Any errors encountered
+  At the end, provide a summary of actions taken.
 """
 
 
 def build_birthday_detection_task(already_logged_in: bool) -> str:
-    """Task: Detect contacts with birthdays TODAY and send them wishes."""
     login_instructions = (
         "You are already logged into LinkedIn. Skip the login step."
         if already_logged_in
@@ -217,49 +206,29 @@ def build_birthday_detection_task(already_logged_in: bool) -> str:
     return f"""
   Open the browser.
   {login_instructions}
+  {dry_run_notice()}
 
-  Once on LinkedIn, your goal is to find contacts with birthdays TODAY
-  and send them a birthday wish message.
+  Goal: Find contacts with birthdays TODAY and send them a wish.
 
-  STEP 1 — Find today's birthdays.
-    Go to: https://www.linkedin.com/mynetwork/
-    Look for a "Birthdays" section or notification that shows contacts
-    celebrating their birthday today.
-    Also check the top notification bell (🔔) for any birthday alerts.
-    If LinkedIn shows a birthday card or "Say happy birthday" button
-    for any contact, note their name.
+  STEP 1 — Go to https://www.linkedin.com/mynetwork/
+    Look for a "Birthdays" section or "Say happy birthday" button.
+    Also check the notification bell 🔔 for birthday alerts.
 
   STEP 2 — For each contact with a birthday today:
-    a) Extract their FIRST NAME only
-       (e.g. "Rahul Ahmed" → use "Rahul").
-
-    b) Click on their profile or the "Message" button to open a chat.
-
-    c) Choose ONE wish from the templates below, fill in {{name}}
-       with their actual first name, and send it:
+    a) Extract their FIRST NAME only.
+    b) Open their chat / Message button.
+    c) Choose ONE wish template, fill in {{name}}, send (or log if DRY RUN):
 
 {wish_templates_str}
 
-       Example: if the contact is "Priya Sharma" and you pick template 2,
-       send: "Wishing you a fantastic birthday, Priya! 🎉 Hope it's full of joy!"
+  STEP 3 — Stop after 20 contacts or when no more birthdays remain.
 
-       Pick templates randomly — do NOT always pick template 1.
+  Rules:
+    - Only wish people whose birthday is TODAY.
+    - No duplicate wishes.
+    - If unsure, SKIP.
 
-    d) After sending, move to the next birthday contact.
-
-  STEP 3 — Stop conditions.
-    Stop after wishing up to 20 contacts, or when there are no more
-    birthday contacts to wish today.
-
-  Important rules:
-    - Only wish people whose birthday is TODAY — not yesterday, not tomorrow.
-    - Do NOT send duplicate wishes to the same person.
-    - If you are unsure whether it is their birthday, SKIP them.
-
-  At the end, provide a summary:
-    - Names of contacts you wished happy birthday
-    - Total count of wishes sent
-    - Any contacts skipped and why
+  At the end, provide a summary of actions taken.
 """
 
 
@@ -267,7 +236,6 @@ def build_birthday_detection_task(already_logged_in: bool) -> str:
 # 9. RETRY HELPER
 # ──────────────────────────────────────────────
 async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: int = 5):
-    """Run an async coroutine, retrying up to `retries` times on failure."""
     for attempt in range(1, retries + 1):
         try:
             logger.info("🚀 [%s] Attempt %d/%d", task_name, attempt, retries)
@@ -280,9 +248,7 @@ async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: 
                 logger.info("⏳ Retrying in %d seconds…", delay)
                 await asyncio.sleep(delay)
             else:
-                logger.critical(
-                    "💀 [%s] All %d attempts failed. Giving up.", task_name, retries
-                )
+                logger.critical("💀 [%s] All %d attempts failed. Giving up.", task_name, retries)
                 raise
 
 
@@ -302,9 +268,7 @@ async def run_github_task():
 
 
 async def run_linkedin_reply_task():
-    """Reply to birthday wishes that people sent you."""
-    logger.info("=== LinkedIn: Replying to Birthday Wishes ===")
-
+    logger.info("=== LinkedIn: Replying to Birthday Wishes === [DRY RUN: %s]", DRY_RUN)
     logged_in = session_is_valid()
     task = build_linkedin_reply_task(already_logged_in=logged_in)
 
@@ -319,9 +283,7 @@ async def run_linkedin_reply_task():
 
 
 async def run_birthday_detection_task():
-    """Detect contacts with birthdays today and send them wishes."""
-    logger.info("=== LinkedIn: Sending Birthday Wishes to Contacts ===")
-
+    logger.info("=== LinkedIn: Sending Birthday Wishes === [DRY RUN: %s]", DRY_RUN)
     logged_in = session_is_valid()
     task = build_birthday_detection_task(already_logged_in=logged_in)
 
@@ -336,7 +298,48 @@ async def run_birthday_detection_task():
 
 
 # ──────────────────────────────────────────────
-# 11. CLEANUP
+# 11. DAILY SCHEDULED JOB
+# ──────────────────────────────────────────────
+async def daily_job():
+    """
+    This runs automatically every day at SCHEDULE_HOUR:SCHEDULE_MINUTE.
+    Adjust DRY_RUN at the top to test before going live.
+    """
+    logger.info("⏰ Scheduler triggered daily job.")
+    try:
+        await run_birthday_detection_task()   # Wish contacts on their birthday
+        await run_linkedin_reply_task()        # Reply to wishes sent to you
+    except Exception as e:
+        logger.error("❌ Daily job failed: %s", e)
+
+
+async def run_scheduler():
+    """Start the scheduler and keep it running."""
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        daily_job,
+        trigger="cron",
+        hour=SCHEDULE_HOUR,
+        minute=SCHEDULE_MINUTE,
+    )
+    scheduler.start()
+    logger.info(
+        "📅 Scheduler started. Agent will run every day at %02d:%02d.",
+        SCHEDULE_HOUR, SCHEDULE_MINUTE,
+    )
+    logger.info("   DRY RUN mode: %s", DRY_RUN)
+    logger.info("   Press Ctrl+C to stop.")
+
+    try:
+        while True:
+            await asyncio.sleep(60)  # Keep alive
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()
+        logger.info("🛑 Scheduler stopped.")
+
+
+# ──────────────────────────────────────────────
+# 12. CLEANUP
 # ──────────────────────────────────────────────
 async def close_browser():
     try:
@@ -347,16 +350,23 @@ async def close_browser():
 
 
 # ──────────────────────────────────────────────
-# 12. ENTRYPOINT
+# 13. ENTRYPOINT
 # ──────────────────────────────────────────────
+task_github = f"""
+  Open browser, then go to {GITHUB_URL} and tell me how many followers they have.
+"""
+
 async def main():
     try:
-        # ── Choose which task(s) to run ───────────────
-        # Comment/uncomment as needed:
+        # ── Pick ONE mode to run ──────────────────────
 
-        await run_github_task()
-        # await run_linkedin_reply_task()       # Reply to wishes sent to YOU
-        # await run_birthday_detection_task()   # Wish YOUR contacts on their birthday
+        # MODE 1: Run once immediately (good for testing)
+        # await run_github_task()
+        # await run_linkedin_reply_task()
+        # await run_birthday_detection_task()
+
+        # MODE 2: Run on a daily schedule (keep terminal open)
+        await run_scheduler()
 
     finally:
         await close_browser()

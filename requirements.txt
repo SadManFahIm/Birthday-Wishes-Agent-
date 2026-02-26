@@ -1,4 +1,5 @@
 langchain_openai
-browser_use
 langchain-google-genai
+browser_use
 python-dotenv
+apscheduler
