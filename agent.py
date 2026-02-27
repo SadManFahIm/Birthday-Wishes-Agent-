@@ -33,12 +33,10 @@ USERNAME   = config.get("USERNAME")
 PASSWORD   = config.get("PASSWORD")
 GITHUB_URL = config.get("GITHUB_URL")
 
-# ── DRY RUN MODE ─────────────────────────────
 # Set to True  → agent will SHOW what it would do, but NOT actually send messages
 # Set to False → agent will actually send messages
 DRY_RUN = True
 
-# ── SCHEDULER TIME ────────────────────────────
 # Agent will run automatically every day at this time (24h format)
 SCHEDULE_HOUR   = 9   # 9 AM
 SCHEDULE_MINUTE = 0   # :00
@@ -129,7 +127,6 @@ BIRTHDAY_WISH_TEMPLATES = [
 # 7. DRY RUN HELPER
 # ──────────────────────────────────────────────
 def dry_run_notice() -> str:
-    """Returns extra instructions for the agent when DRY_RUN is enabled."""
     if DRY_RUN:
         return """
   ⚠️  DRY RUN MODE IS ON ⚠️
@@ -139,11 +136,64 @@ def dry_run_notice() -> str:
   Then move on without clicking Send.
   At the end, summarize everything you would have done.
 """
-    return ""  # Normal mode — no extra instructions
+    return ""
 
 
 # ──────────────────────────────────────────────
-# 8. TASK BUILDERS
+# 8. BETTER WISH DETECTION RULES
+#    Used in both reply and birthday detection tasks.
+#    Covers direct, indirect, and multi-language wishes.
+# ──────────────────────────────────────────────
+WISH_DETECTION_RULES = """
+  BIRTHDAY WISH DETECTION RULES (read carefully):
+
+  A message IS a birthday wish if it contains ANY of the following —
+
+  ✅ Direct English phrases:
+     "Happy birthday", "HBD", "Happy bday", "Many happy returns",
+     "Wishing you a wonderful birthday", "Hope your birthday is amazing",
+     "Congrats on your special day", "Enjoy your special day",
+     "Hope you have a great day", "Birthday greetings"
+
+  ✅ Indirect / creative English phrases (IMPROVED DETECTION):
+     "Another year older", "Another trip around the sun",
+     "Hope your day is as special as you are",
+     "Celebrate you today", "Your big day", "Wishing you well today",
+     "May this year bring you", "May your day be filled",
+     "Thinking of you on your day", "Cheers to you",
+     "Here's to another year", "Hope today treats you well"
+
+  ✅ Bengali (বাংলা):
+     "শুভ জন্মদিন", "জন্মদিনের শুভেচ্ছা", "শুভ জন্মদিন",
+     "অনেক শুভকামনা", "ভালো থাকুন", "জন্মদিনে শুভকামনা"
+
+  ✅ Arabic (عربي):
+     "عيد ميلاد سعيد", "كل عام وأنت بخير", "سنة حلوة يا جميل"
+
+  ✅ Hindi (हिन्दी):
+     "जन्मदिन मुबारक", "जन्मदिन की शुभकामनाएं", "Happy janamdin"
+
+  ✅ Spanish: "Feliz cumpleaños", "Feliz cumple"
+  ✅ French:  "Joyeux anniversaire", "Bon anniversaire"
+  ✅ German:  "Alles Gute zum Geburtstag", "Herzlichen Glückwunsch"
+  ✅ Turkish: "İyi ki doğdun", "Doğum günün kutlu olsun"
+  ✅ Indonesian/Malay: "Selamat ulang tahun", "Met ultah", "Hbd"
+  ✅ Emoji-only hints (treat as birthday wish if these appear):
+     🎂 🎉 🎈 🥳 🎁 combined with a name or greeting
+
+  ❌ A message is NOT a birthday wish if it is:
+     - A job offer, business inquiry, or networking message
+     - A general "Hi", "Hello", "How are you?" with no birthday context
+     - A reply to your own previous message
+     - A group announcement unrelated to birthday
+     - Completely unrelated to celebration or a special day
+
+  When in doubt → SKIP. Accuracy is more important than coverage.
+"""
+
+
+# ──────────────────────────────────────────────
+# 9. TASK BUILDERS
 # ──────────────────────────────────────────────
 def build_linkedin_reply_task(already_logged_in: bool) -> str:
     login_instructions = (
@@ -172,17 +222,27 @@ def build_linkedin_reply_task(already_logged_in: bool) -> str:
   - Examine each UNREAD message thread one by one (up to 15 threads).
 
   STEP 1 — Identify the sender's FIRST NAME.
-  STEP 2 — Check if it's a birthday wish.
-    YES: "Happy birthday", "HBD", "Many happy returns", "Hope your day is great", etc.
-    NO:  Anything else — questions, business, job offers, unrelated greetings.
+    Look at the thread header or profile name.
+    Extract only the first name (e.g. "Rahul Ahmed" → "Rahul").
+
+  STEP 2 — Detect if it's a birthday wish using these rules:
+{WISH_DETECTION_RULES}
 
   STEP 3 — Reply or Skip.
-    If YES → choose ONE template, fill in {{name}}, send (or log if DRY RUN):
+    If it IS a birthday wish:
+       Choose ONE reply template, fill in {{name}} with sender's first name,
+       then send it (or log it if DRY RUN):
 {reply_templates_str}
 
-    If NO → open thread (mark as read) and move on.
+       Pick randomly — do NOT always use template 1.
 
-  At the end, provide a summary of actions taken.
+    If it is NOT a birthday wish:
+       Do NOT reply. Just open the thread (mark as read) and move on.
+
+  At the end, provide a summary:
+    - Replied to: (list sender names and messages sent)
+    - Skipped: (count and reason)
+    - Any errors
 """
 
 
@@ -208,16 +268,17 @@ def build_birthday_detection_task(already_logged_in: bool) -> str:
   {login_instructions}
   {dry_run_notice()}
 
-  Goal: Find contacts with birthdays TODAY and send them a wish.
+  Goal: Find contacts with birthdays TODAY and send them a personalized wish.
 
   STEP 1 — Go to https://www.linkedin.com/mynetwork/
     Look for a "Birthdays" section or "Say happy birthday" button.
     Also check the notification bell 🔔 for birthday alerts.
 
   STEP 2 — For each contact with a birthday today:
-    a) Extract their FIRST NAME only.
-    b) Open their chat / Message button.
-    c) Choose ONE wish template, fill in {{name}}, send (or log if DRY RUN):
+    a) Extract their FIRST NAME only (e.g. "Priya Sharma" → "Priya").
+    b) Open their chat / click the Message button.
+    c) Choose ONE wish template randomly, fill in {{name}}, then send
+       (or log if DRY RUN):
 
 {wish_templates_str}
 
@@ -225,15 +286,18 @@ def build_birthday_detection_task(already_logged_in: bool) -> str:
 
   Rules:
     - Only wish people whose birthday is TODAY.
-    - No duplicate wishes.
+    - No duplicate wishes to the same person.
     - If unsure, SKIP.
 
-  At the end, provide a summary of actions taken.
+  At the end, provide a summary:
+    - Wished: (list names and messages sent)
+    - Skipped: (count and reason)
+    - Any errors
 """
 
 
 # ──────────────────────────────────────────────
-# 9. RETRY HELPER
+# 10. RETRY HELPER
 # ──────────────────────────────────────────────
 async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: int = 5):
     for attempt in range(1, retries + 1):
@@ -253,8 +317,13 @@ async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: 
 
 
 # ──────────────────────────────────────────────
-# 10. TASK RUNNERS
+# 11. TASK RUNNERS
 # ──────────────────────────────────────────────
+task_github = f"""
+  Open browser, then go to {GITHUB_URL} and tell me how many followers they have.
+"""
+
+
 async def run_github_task():
     logger.info("=== GitHub Follower Check ===")
 
@@ -298,23 +367,18 @@ async def run_birthday_detection_task():
 
 
 # ──────────────────────────────────────────────
-# 11. DAILY SCHEDULED JOB
+# 12. DAILY SCHEDULED JOB
 # ──────────────────────────────────────────────
 async def daily_job():
-    """
-    This runs automatically every day at SCHEDULE_HOUR:SCHEDULE_MINUTE.
-    Adjust DRY_RUN at the top to test before going live.
-    """
     logger.info("⏰ Scheduler triggered daily job.")
     try:
-        await run_birthday_detection_task()   # Wish contacts on their birthday
-        await run_linkedin_reply_task()        # Reply to wishes sent to you
+        await run_birthday_detection_task()
+        await run_linkedin_reply_task()
     except Exception as e:
         logger.error("❌ Daily job failed: %s", e)
 
 
 async def run_scheduler():
-    """Start the scheduler and keep it running."""
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         daily_job,
@@ -332,14 +396,14 @@ async def run_scheduler():
 
     try:
         while True:
-            await asyncio.sleep(60)  # Keep alive
+            await asyncio.sleep(60)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
         logger.info("🛑 Scheduler stopped.")
 
 
 # ──────────────────────────────────────────────
-# 12. CLEANUP
+# 13. CLEANUP
 # ──────────────────────────────────────────────
 async def close_browser():
     try:
@@ -350,16 +414,11 @@ async def close_browser():
 
 
 # ──────────────────────────────────────────────
-# 13. ENTRYPOINT
+# 14. ENTRYPOINT
 # ──────────────────────────────────────────────
-task_github = f"""
-  Open browser, then go to {GITHUB_URL} and tell me how many followers they have.
-"""
-
 async def main():
     try:
         # ── Pick ONE mode to run ──────────────────────
-
         # MODE 1: Run once immediately (good for testing)
         # await run_github_task()
         # await run_linkedin_reply_task()
