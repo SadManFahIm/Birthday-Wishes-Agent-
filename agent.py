@@ -1,7 +1,9 @@
 import asyncio
 import json
 import logging
+import sqlite3
 import time
+from datetime import date, datetime
 from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -9,6 +11,8 @@ from browser_use import Agent, Browser, BrowserConfig
 from dotenv import dotenv_values
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
+
+from notifications import send_summary
 
 # ──────────────────────────────────────────────
 # 1. LOGGING SETUP
@@ -33,23 +37,120 @@ USERNAME   = config.get("USERNAME")
 PASSWORD   = config.get("PASSWORD")
 GITHUB_URL = config.get("GITHUB_URL")
 
-# Set to True  → agent will SHOW what it would do, but NOT actually send messages
-# Set to False → agent will actually send messages
+# Set to True  → simulate only, no messages sent
+# Set to False → actually send messages
 DRY_RUN = True
 
-# Agent will run automatically every day at this time (24h format)
-SCHEDULE_HOUR   = 9   # 9 AM
-SCHEDULE_MINUTE = 0   # :00
+# Daily schedule time (24h format)
+SCHEDULE_HOUR   = 9
+SCHEDULE_MINUTE = 0
+
+# ── WHITELIST / BLACKLIST ─────────────────────
+# WHITELIST: if not empty, ONLY these contacts will be wished/replied to.
+# BLACKLIST: these contacts will always be skipped.
+# Use full names as they appear on LinkedIn (case-insensitive).
+WHITELIST: list[str] = []   # e.g. ["Rahul Ahmed", "Priya Sharma"]
+BLACKLIST: list[str] = []   # e.g. ["John Doe", "Spam Account"]
+
+# ── REPLY COOLDOWN ────────────────────────────
+# Minimum days before the agent will reply/wish the same contact again.
+COOLDOWN_DAYS = 30
 
 if not USERNAME or not PASSWORD:
     raise EnvironmentError(
-        "❌ USERNAME or PASSWORD is missing in .env file. "
-        "Please fill in your credentials."
+        "❌ USERNAME or PASSWORD is missing in .env file."
     )
 
 
 # ──────────────────────────────────────────────
-# 3. SESSION / COOKIE MANAGEMENT
+# 3. SQLITE LOGGING
+# ──────────────────────────────────────────────
+DB_FILE = Path("agent_history.db")
+
+
+def init_db():
+    """Create the history table if it doesn't exist."""
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS history (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                date        TEXT    NOT NULL,
+                task        TEXT    NOT NULL,
+                contact     TEXT    NOT NULL,
+                message     TEXT    NOT NULL,
+                dry_run     INTEGER NOT NULL,
+                created_at  TEXT    NOT NULL
+            )
+        """)
+        conn.commit()
+    logger.info("🗄️  Database ready: %s", DB_FILE)
+
+
+def log_action(task: str, contact: str, message: str, dry_run: bool):
+    """Save a sent wish/reply to the SQLite history."""
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.execute(
+            "INSERT INTO history (date, task, contact, message, dry_run, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                date.today().isoformat(),
+                task,
+                contact,
+                message,
+                int(dry_run),
+                datetime.now().isoformat(),
+            ),
+        )
+        conn.commit()
+    logger.info("🗄️  Logged action: [%s] → %s", task, contact)
+
+
+def get_recent_contacts(task: str, days: int) -> set[str]:
+    """
+    Return a set of contact names that were already
+    wished/replied to within the last `days` days.
+    """
+    if not DB_FILE.exists():
+        return set()
+    cutoff = date.fromordinal(date.today().toordinal() - days).isoformat()
+    with sqlite3.connect(DB_FILE) as conn:
+        rows = conn.execute(
+            "SELECT LOWER(contact) FROM history "
+            "WHERE task = ? AND date >= ? AND dry_run = 0",
+            (task, cutoff),
+        ).fetchall()
+    return {row[0] for row in rows}
+
+
+# ──────────────────────────────────────────────
+# 4. WHITELIST / BLACKLIST HELPERS
+# ──────────────────────────────────────────────
+def is_allowed(name: str) -> bool:
+    """Return True if this contact should be processed."""
+    name_lower = name.lower()
+
+    if BLACKLIST and name_lower in [b.lower() for b in BLACKLIST]:
+        logger.info("🚫 Blacklisted contact skipped: %s", name)
+        return False
+
+    if WHITELIST and name_lower not in [w.lower() for w in WHITELIST]:
+        logger.info("⏭️  Not in whitelist, skipping: %s", name)
+        return False
+
+    return True
+
+
+def is_on_cooldown(name: str, task: str) -> bool:
+    """Return True if this contact was already contacted within COOLDOWN_DAYS."""
+    recent = get_recent_contacts(task, COOLDOWN_DAYS)
+    if name.lower() in recent:
+        logger.info("❄️  Cooldown active for: %s (task: %s)", name, task)
+        return True
+    return False
+
+
+# ──────────────────────────────────────────────
+# 5. SESSION / COOKIE MANAGEMENT
 # ──────────────────────────────────────────────
 SESSION_FILE = Path("linkedin_session.json")
 SESSION_MAX_AGE_HOURS = 12
@@ -85,7 +186,7 @@ def save_session_timestamp():
 
 
 # ──────────────────────────────────────────────
-# 4. BROWSER
+# 6. BROWSER
 # ──────────────────────────────────────────────
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 
@@ -97,14 +198,14 @@ browser = Browser(
 
 
 # ──────────────────────────────────────────────
-# 5. LLM
+# 7. LLM
 # ──────────────────────────────────────────────
 # llm = ChatOpenAI(model="gpt-4o")
 llm = ChatGoogleGenerativeAI(model="models/gemini-2.5-flash-preview-04-17")
 
 
 # ──────────────────────────────────────────────
-# 6. TEMPLATES
+# 8. TEMPLATES
 # ──────────────────────────────────────────────
 PERSONALIZED_REPLY_TEMPLATES = [
     "Thanks so much, {name}! Really means a lot 😊",
@@ -124,7 +225,7 @@ BIRTHDAY_WISH_TEMPLATES = [
 
 
 # ──────────────────────────────────────────────
-# 7. DRY RUN HELPER
+# 9. DRY RUN HELPER
 # ──────────────────────────────────────────────
 def dry_run_notice() -> str:
     if DRY_RUN:
@@ -140,9 +241,7 @@ def dry_run_notice() -> str:
 
 
 # ──────────────────────────────────────────────
-# 8. BETTER WISH DETECTION RULES
-#    Used in both reply and birthday detection tasks.
-#    Covers direct, indirect, and multi-language wishes.
+# 10. BETTER WISH DETECTION RULES
 # ──────────────────────────────────────────────
 WISH_DETECTION_RULES = """
   BIRTHDAY WISH DETECTION RULES (read carefully):
@@ -155,45 +254,55 @@ WISH_DETECTION_RULES = """
      "Congrats on your special day", "Enjoy your special day",
      "Hope you have a great day", "Birthday greetings"
 
-  ✅ Indirect / creative English phrases (IMPROVED DETECTION):
+  ✅ Indirect / creative English phrases:
      "Another year older", "Another trip around the sun",
      "Hope your day is as special as you are",
-     "Celebrate you today", "Your big day", "Wishing you well today",
+     "Celebrate you today", "Your big day",
      "May this year bring you", "May your day be filled",
      "Thinking of you on your day", "Cheers to you",
      "Here's to another year", "Hope today treats you well"
 
-  ✅ Bengali (বাংলা):
-     "শুভ জন্মদিন", "জন্মদিনের শুভেচ্ছা", "শুভ জন্মদিন",
-     "অনেক শুভকামনা", "ভালো থাকুন", "জন্মদিনে শুভকামনা"
-
-  ✅ Arabic (عربي):
-     "عيد ميلاد سعيد", "كل عام وأنت بخير", "سنة حلوة يا جميل"
-
-  ✅ Hindi (हिन्दी):
-     "जन्मदिन मुबारक", "जन्मदिन की शुभकामनाएं", "Happy janamdin"
-
+  ✅ Bengali: "শুভ জন্মদিন", "জন্মদিনের শুভেচ্ছা", "অনেক শুভকামনা"
+  ✅ Arabic:  "عيد ميلاد سعيد", "كل عام وأنت بخير"
+  ✅ Hindi:   "जन्मदिन मुबारक", "जन्मदिन की शुभकामनाएं"
   ✅ Spanish: "Feliz cumpleaños", "Feliz cumple"
   ✅ French:  "Joyeux anniversaire", "Bon anniversaire"
-  ✅ German:  "Alles Gute zum Geburtstag", "Herzlichen Glückwunsch"
+  ✅ German:  "Alles Gute zum Geburtstag"
   ✅ Turkish: "İyi ki doğdun", "Doğum günün kutlu olsun"
-  ✅ Indonesian/Malay: "Selamat ulang tahun", "Met ultah", "Hbd"
-  ✅ Emoji-only hints (treat as birthday wish if these appear):
-     🎂 🎉 🎈 🥳 🎁 combined with a name or greeting
+  ✅ Indonesian/Malay: "Selamat ulang tahun", "Met ultah"
+  ✅ Emoji-only hints: 🎂 🎉 🎈 🥳 🎁 combined with a name or greeting
 
-  ❌ A message is NOT a birthday wish if it is:
-     - A job offer, business inquiry, or networking message
-     - A general "Hi", "Hello", "How are you?" with no birthday context
-     - A reply to your own previous message
-     - A group announcement unrelated to birthday
-     - Completely unrelated to celebration or a special day
+  ❌ NOT a birthday wish: job offers, general "Hi/Hello", business messages,
+     replies to your own message, group announcements.
 
-  When in doubt → SKIP. Accuracy is more important than coverage.
+  When in doubt → SKIP.
 """
 
 
 # ──────────────────────────────────────────────
-# 9. TASK BUILDERS
+# 11. FILTER NOTICE (injected into task prompts)
+# ──────────────────────────────────────────────
+def filter_notice(task: str) -> str:
+    """Build a dynamic notice about cooldown/whitelist/blacklist for the agent."""
+    recent   = get_recent_contacts(task, COOLDOWN_DAYS)
+    cooldown_str  = ", ".join(recent) if recent else "None"
+    whitelist_str = ", ".join(WHITELIST) if WHITELIST else "Everyone (no whitelist set)"
+    blacklist_str = ", ".join(BLACKLIST) if BLACKLIST else "None"
+
+    return f"""
+  CONTACT FILTERS (follow strictly):
+
+  🚫 BLACKLIST — always skip these contacts: {blacklist_str}
+  ✅ WHITELIST — only process these contacts: {whitelist_str}
+  ❄️  COOLDOWN  — skip these (already contacted in last {COOLDOWN_DAYS} days): {cooldown_str}
+
+  If a contact appears in blacklist or cooldown → do NOT send, just skip.
+  If whitelist is set → only send to contacts IN the whitelist.
+"""
+
+
+# ──────────────────────────────────────────────
+# 12. TASK BUILDERS
 # ──────────────────────────────────────────────
 def build_linkedin_reply_task(already_logged_in: bool) -> str:
     login_instructions = (
@@ -203,46 +312,39 @@ def build_linkedin_reply_task(already_logged_in: bool) -> str:
             f"Go to https://linkedin.com and log in with:\n"
             f"  Email:    {USERNAME}\n"
             f"  Password: {PASSWORD}\n"
-            "Handle MFA if prompted (wait for user if needed).\n"
+            "Handle MFA if prompted.\n"
         )
     )
 
     reply_templates_str = "\n".join(
-        f'  {i+1}. "{t}"'
-        for i, t in enumerate(PERSONALIZED_REPLY_TEMPLATES)
+        f'  {i+1}. "{t}"' for i, t in enumerate(PERSONALIZED_REPLY_TEMPLATES)
     )
 
     return f"""
   Open the browser.
   {login_instructions}
   {dry_run_notice()}
+  {filter_notice("LinkedIn-Reply")}
 
   Once on LinkedIn:
-  - Navigate to the main messaging page (https://www.linkedin.com/messaging/).
+  - Navigate to https://www.linkedin.com/messaging/
   - Examine each UNREAD message thread one by one (up to 15 threads).
 
   STEP 1 — Identify the sender's FIRST NAME.
-    Look at the thread header or profile name.
-    Extract only the first name (e.g. "Rahul Ahmed" → "Rahul").
-
-  STEP 2 — Detect if it's a birthday wish using these rules:
+  STEP 2 — Apply contact filters above (blacklist, whitelist, cooldown).
+  STEP 3 — Detect if it's a birthday wish:
 {WISH_DETECTION_RULES}
 
-  STEP 3 — Reply or Skip.
-    If it IS a birthday wish:
-       Choose ONE reply template, fill in {{name}} with sender's first name,
-       then send it (or log it if DRY RUN):
+  STEP 4 — Reply or Skip.
+    If IS birthday wish AND contact is allowed:
+       Choose ONE template randomly, fill {{name}}, send (or log if DRY RUN):
 {reply_templates_str}
 
-       Pick randomly — do NOT always use template 1.
-
-    If it is NOT a birthday wish:
-       Do NOT reply. Just open the thread (mark as read) and move on.
+    Otherwise → skip.
 
   At the end, provide a summary:
-    - Replied to: (list sender names and messages sent)
-    - Skipped: (count and reason)
-    - Any errors
+    - Replied to: (names + messages)
+    - Skipped: (count + reason)
 """
 
 
@@ -254,50 +356,45 @@ def build_birthday_detection_task(already_logged_in: bool) -> str:
             f"Go to https://linkedin.com and log in with:\n"
             f"  Email:    {USERNAME}\n"
             f"  Password: {PASSWORD}\n"
-            "Handle MFA if prompted (wait for user if needed).\n"
+            "Handle MFA if prompted.\n"
         )
     )
 
     wish_templates_str = "\n".join(
-        f'  {i+1}. "{t}"'
-        for i, t in enumerate(BIRTHDAY_WISH_TEMPLATES)
+        f'  {i+1}. "{t}"' for i, t in enumerate(BIRTHDAY_WISH_TEMPLATES)
     )
 
     return f"""
   Open the browser.
   {login_instructions}
   {dry_run_notice()}
+  {filter_notice("LinkedIn-BirthdayDetection")}
 
-  Goal: Find contacts with birthdays TODAY and send them a personalized wish.
+  Goal: Find contacts with birthdays TODAY and send them a wish.
 
   STEP 1 — Go to https://www.linkedin.com/mynetwork/
-    Look for a "Birthdays" section or "Say happy birthday" button.
-    Also check the notification bell 🔔 for birthday alerts.
+    Look for "Birthdays" section or "Say happy birthday" button.
+    Also check the notification bell 🔔.
 
-  STEP 2 — For each contact with a birthday today:
-    a) Extract their FIRST NAME only (e.g. "Priya Sharma" → "Priya").
-    b) Open their chat / click the Message button.
-    c) Choose ONE wish template randomly, fill in {{name}}, then send
-       (or log if DRY RUN):
+  STEP 2 — For each birthday contact:
+    a) Extract FIRST NAME only.
+    b) Apply contact filters (blacklist, whitelist, cooldown).
+    c) If allowed → open chat, choose ONE wish randomly, send (or log if DRY RUN):
 
 {wish_templates_str}
 
-  STEP 3 — Stop after 20 contacts or when no more birthdays remain.
+  STEP 3 — Stop after 20 contacts or no more birthdays.
 
-  Rules:
-    - Only wish people whose birthday is TODAY.
-    - No duplicate wishes to the same person.
-    - If unsure, SKIP.
+  Rules: TODAY only. No duplicates. Skip if unsure.
 
   At the end, provide a summary:
-    - Wished: (list names and messages sent)
-    - Skipped: (count and reason)
-    - Any errors
+    - Wished: (names + messages)
+    - Skipped: (count + reason)
 """
 
 
 # ──────────────────────────────────────────────
-# 10. RETRY HELPER
+# 13. RETRY HELPER
 # ──────────────────────────────────────────────
 async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: int = 5):
     for attempt in range(1, retries + 1):
@@ -312,15 +409,15 @@ async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: 
                 logger.info("⏳ Retrying in %d seconds…", delay)
                 await asyncio.sleep(delay)
             else:
-                logger.critical("💀 [%s] All %d attempts failed. Giving up.", task_name, retries)
+                logger.critical("💀 [%s] All %d attempts failed.", task_name, retries)
                 raise
 
 
 # ──────────────────────────────────────────────
-# 11. TASK RUNNERS
+# 14. TASK RUNNERS
 # ──────────────────────────────────────────────
 task_github = f"""
-  Open browser, then go to {GITHUB_URL} and tell me how many followers they have.
+  Open browser, go to {GITHUB_URL} and tell me how many followers they have.
 """
 
 
@@ -347,6 +444,24 @@ async def run_linkedin_reply_task():
 
     result = await run_with_retry(_run, task_name="LinkedIn-Reply")
     save_session_timestamp()
+
+    # Parse result to extract names (simplified)
+    wished = []
+    skipped = 0
+    result_str = str(result)
+    for line in result_str.splitlines():
+        if "replied to" in line.lower() or "would send to" in line.lower():
+            wished.append(line.strip())
+        if "skipped" in line.lower():
+            skipped += 1
+
+    # Log to DB
+    for name in wished:
+        log_action("LinkedIn-Reply", name, "replied", DRY_RUN)
+
+    # Send notification
+    send_summary("Reply to Wishes", wished, skipped, DRY_RUN)
+
     logger.info("LinkedIn Reply Result: %s", result)
     return result
 
@@ -362,12 +477,30 @@ async def run_birthday_detection_task():
 
     result = await run_with_retry(_run, task_name="LinkedIn-BirthdayDetection")
     save_session_timestamp()
+
+    # Parse result
+    wished = []
+    skipped = 0
+    result_str = str(result)
+    for line in result_str.splitlines():
+        if "wished" in line.lower() or "would send to" in line.lower():
+            wished.append(line.strip())
+        if "skipped" in line.lower():
+            skipped += 1
+
+    # Log to DB
+    for name in wished:
+        log_action("LinkedIn-BirthdayDetection", name, "wished", DRY_RUN)
+
+    # Send notification
+    send_summary("Birthday Detection", wished, skipped, DRY_RUN)
+
     logger.info("Birthday Detection Result: %s", result)
     return result
 
 
 # ──────────────────────────────────────────────
-# 12. DAILY SCHEDULED JOB
+# 15. DAILY SCHEDULED JOB
 # ──────────────────────────────────────────────
 async def daily_job():
     logger.info("⏰ Scheduler triggered daily job.")
@@ -388,12 +521,9 @@ async def run_scheduler():
     )
     scheduler.start()
     logger.info(
-        "📅 Scheduler started. Agent will run every day at %02d:%02d.",
-        SCHEDULE_HOUR, SCHEDULE_MINUTE,
+        "📅 Scheduler started. Runs daily at %02d:%02d. DRY_RUN=%s",
+        SCHEDULE_HOUR, SCHEDULE_MINUTE, DRY_RUN,
     )
-    logger.info("   DRY RUN mode: %s", DRY_RUN)
-    logger.info("   Press Ctrl+C to stop.")
-
     try:
         while True:
             await asyncio.sleep(60)
@@ -403,7 +533,7 @@ async def run_scheduler():
 
 
 # ──────────────────────────────────────────────
-# 13. CLEANUP
+# 16. CLEANUP
 # ──────────────────────────────────────────────
 async def close_browser():
     try:
@@ -414,17 +544,18 @@ async def close_browser():
 
 
 # ──────────────────────────────────────────────
-# 14. ENTRYPOINT
+# 17. ENTRYPOINT
 # ──────────────────────────────────────────────
 async def main():
+    init_db()  # Ensure SQLite DB is ready
+
     try:
-        # ── Pick ONE mode to run ──────────────────────
-        # MODE 1: Run once immediately (good for testing)
+        # MODE 1: Run once immediately
         # await run_github_task()
         # await run_linkedin_reply_task()
         # await run_birthday_detection_task()
 
-        # MODE 2: Run on a daily schedule (keep terminal open)
+        # MODE 2: Daily scheduler (keep terminal open)
         await run_scheduler()
 
     finally:
