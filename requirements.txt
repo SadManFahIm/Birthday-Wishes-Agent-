@@ -5,3 +5,5 @@ python-dotenv
 apscheduler
 streamlit
 requests
+gTTS
+elevenlabs
