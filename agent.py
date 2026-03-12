@@ -13,7 +13,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 
 from notifications import send_summary
-from platforms import run_whatsapp_task, run_facebook_task, run_instagram_task
+from platforms import (run_whatsapp_task, run_facebook_task,
+                        run_instagram_task, run_linkedin_birthday_with_custom_wish)
+from wish_generator import generate_custom_wish
+from voice import generate_voice
 
 # ──────────────────────────────────────────────
 # 1. LOGGING SETUP
@@ -53,6 +56,12 @@ ENABLE_LINKEDIN  = True
 ENABLE_WHATSAPP  = True
 ENABLE_FACEBOOK  = True
 ENABLE_INSTAGRAM = True
+
+# ── VOICE MESSAGE SETTINGS ────────────────────
+# VOICE_ENABLED: True = send voice messages on WhatsApp instead of text
+# VOICE_ENGINE : "gtts" (free) or "elevenlabs" (premium, more realistic)
+VOICE_ENABLED = True
+VOICE_ENGINE  = "gtts"
 
 if not USERNAME or not PASSWORD:
     raise EnvironmentError("❌ USERNAME or PASSWORD missing in .env")
@@ -365,14 +374,36 @@ async def run_birthday_detection_task():
     return result
 
 
+async def run_ai_custom_wish_task():
+    """Birthday detection with AI-generated personalized wishes."""
+    logger.info("=== LinkedIn: AI Custom Wishes === [DRY RUN: %s]", DRY_RUN)
+    async def _run():
+        return await run_linkedin_birthday_with_custom_wish(
+            llm=llm,
+            browser=browser,
+            dry_run=DRY_RUN,
+            username=USERNAME,
+            password=PASSWORD,
+            already_logged_in=session_is_valid(),
+            filter_notice=filter_notice("LinkedIn-BirthdayDetection"),
+            wish_detection_rules=WISH_DETECTION_RULES,
+        )
+    result = await run_with_retry(_run, "LinkedIn-AIWish")
+    save_session_timestamp()
+    send_summary("LinkedIn - AI Custom Wishes", [], 0, DRY_RUN)
+    return result
+
+
 async def run_whatsapp_reply_task():
-    logger.info("=== WhatsApp Reply === [DRY RUN: %s]", DRY_RUN)
+    logger.info("=== WhatsApp Reply === [DRY RUN: %s | VOICE: %s]", DRY_RUN, VOICE_ENABLED)
     async def _run():
         return await run_whatsapp_task(
             llm=llm, browser=browser, dry_run=DRY_RUN,
             wish_detection_rules=WISH_DETECTION_RULES,
             reply_templates=PERSONALIZED_REPLY_TEMPLATES,
             filter_notice=filter_notice("WhatsApp-Reply"),
+            voice_enabled=VOICE_ENABLED,
+            voice_engine=VOICE_ENGINE,
         )
     result = await run_with_retry(_run, "WhatsApp-Reply")
     send_summary("WhatsApp - Reply to Wishes", [], 0, DRY_RUN)
@@ -472,6 +503,7 @@ async def main():
         # await run_github_task()
         # await run_linkedin_reply_task()
         # await run_birthday_detection_task()
+        # await run_ai_custom_wish_task()     # AI-generated unique wishes
         # await run_whatsapp_reply_task()
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
