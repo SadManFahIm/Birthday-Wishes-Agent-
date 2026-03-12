@@ -16,6 +16,9 @@ from notifications import send_summary
 from platforms import (run_whatsapp_task, run_facebook_task,
                         run_instagram_task, run_linkedin_birthday_with_custom_wish)
 from wish_generator import generate_custom_wish
+from followup import (init_followup_table, schedule_followup,
+                       get_pending_followups, mark_followup_sent,
+                       build_followup_task)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -441,6 +444,39 @@ async def run_instagram_reply_task():
 # ──────────────────────────────────────────────
 # 14. DAILY JOB (all platforms)
 # ──────────────────────────────────────────────
+async def run_followup_task():
+    """Send follow-up messages to contacts whose birthday was 2-3 days ago."""
+    logger.info("=== Follow-up Messages === [DRY RUN: %s]", DRY_RUN)
+
+    pending = get_pending_followups()
+    if not pending:
+        logger.info("📭 No follow-ups due today.")
+        return
+
+    task = build_followup_task(
+        pending=pending,
+        dry_run=DRY_RUN,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+    )
+
+    async def _run():
+        return await Agent(task=task, llm=llm, browser=browser).run()
+
+    result = await run_with_retry(_run, "FollowUp")
+    save_session_timestamp()
+
+    # Mark all as sent (in live mode)
+    if not DRY_RUN:
+        for item in pending:
+            mark_followup_sent(item["id"])
+
+    send_summary("Follow-up Messages", [p["contact"] for p in pending], 0, DRY_RUN)
+    logger.info("Follow-up Result: %s", result)
+    return result
+
+
 async def daily_job():
     logger.info("⏰ Daily job started.")
     try:
@@ -460,6 +496,9 @@ async def daily_job():
         # Instagram
         if ENABLE_INSTAGRAM:
             await run_instagram_reply_task()
+
+        # Follow-up messages (2-3 days after birthday)
+        await run_followup_task()
 
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
@@ -504,6 +543,7 @@ async def main():
         # await run_linkedin_reply_task()
         # await run_birthday_detection_task()
         # await run_ai_custom_wish_task()     # AI-generated unique wishes
+        # await run_followup_task()            # Follow-up messages
         # await run_whatsapp_reply_task()
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
