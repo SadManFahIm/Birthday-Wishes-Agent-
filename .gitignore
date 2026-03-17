@@ -1,2 +1,19 @@
+# Environment
 .env
-.venv
+.env.local
+
+# Streamlit secrets (NEVER commit this!)
+.streamlit/secrets.toml
+
+# Auto-generated files
+agent.log
+agent_history.db
+linkedin_session.json
+dashboard_config.json
+audio_messages/
+browser_profile/
+birthdays.ics
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
