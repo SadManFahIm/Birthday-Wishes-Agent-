@@ -7,3 +7,5 @@ streamlit
 requests
 gTTS
 elevenlabs
+tzdata
+pandas

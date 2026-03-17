@@ -19,6 +19,8 @@ from wish_generator import generate_custom_wish
 from followup import (init_followup_table, schedule_followup,
                        get_pending_followups, mark_followup_sent,
                        build_followup_task)
+from calendar_export import export_birthday_calendar
+from smart_timing import should_send_now, build_timing_instructions
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -444,6 +446,21 @@ async def run_instagram_reply_task():
 # ──────────────────────────────────────────────
 # 14. DAILY JOB (all platforms)
 # ──────────────────────────────────────────────
+async def run_calendar_export():
+    """Scrape LinkedIn birthdays and export to .ics file."""
+    logger.info("=== Birthday Calendar Export ===")
+    path = await export_birthday_calendar(
+        llm=llm,
+        browser=browser,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+    )
+    if path:
+        logger.info("✅ Calendar exported to: %s", path)
+    return path
+
+
 async def run_followup_task():
     """Send follow-up messages to contacts whose birthday was 2-3 days ago."""
     logger.info("=== Follow-up Messages === [DRY RUN: %s]", DRY_RUN)
@@ -544,6 +561,7 @@ async def main():
         # await run_birthday_detection_task()
         # await run_ai_custom_wish_task()     # AI-generated unique wishes
         # await run_followup_task()            # Follow-up messages
+        # await run_calendar_export()          # Export birthdays to .ics
         # await run_whatsapp_reply_task()
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
