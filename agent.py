@@ -59,24 +59,19 @@ BLACKLIST: list[str] = []
 COOLDOWN_DAYS = 30
 
 # ── PLATFORM TOGGLES ─────────────────────────
-# Set to True to enable each platform
 ENABLE_LINKEDIN  = True
 ENABLE_WHATSAPP  = True
 ENABLE_FACEBOOK  = True
 ENABLE_INSTAGRAM = True
 
 # ── VOICE MESSAGE SETTINGS ────────────────────
-# VOICE_ENABLED: True = send voice messages on WhatsApp instead of text
-# VOICE_ENGINE : "gtts" (free) or "elevenlabs" (premium, more realistic)
 VOICE_ENABLED = True
 VOICE_ENGINE  = "gtts"
 
 # ── SENTIMENT ANALYSIS ────────────────────────
-# Detects sad/stressed/lonely tone in wishes and replies with extra care
 SENTIMENT_ANALYSIS_ENABLED = True
 
-# ── AUTO-CONNECT ───────────────────────────────
-# Sends connection requests to 2nd-degree wishers after replying
+# ── AUTO-CONNECT ──────────────────────────────
 AUTO_CONNECT_ENABLED = True
 MAX_CONNECTS_PER_DAY = 10
 
@@ -230,7 +225,7 @@ BIRTHDAY_WISH_TEMPLATES = [
 
 
 # ──────────────────────────────────────────────
-# 9. SHARED DETECTION RULES (used by all platforms)
+# 9. SHARED DETECTION RULES
 # ──────────────────────────────────────────────
 WISH_DETECTION_RULES = """
   A message IS a birthday wish if it contains ANY of the following —
@@ -411,6 +406,34 @@ async def run_ai_custom_wish_task():
     return result
 
 
+async def run_sentiment_reply_task():
+    """Reply to LinkedIn wishes with sentiment-aware messages + auto connect."""
+    logger.info("=== LinkedIn: Sentiment-Aware Reply === [DRY RUN: %s]", DRY_RUN)
+    logged_in = session_is_valid()
+
+    sentiment_instructions = build_sentiment_instructions() if SENTIMENT_ANALYSIS_ENABLED else ""
+    connect_instructions   = build_auto_connect_task(
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=logged_in,
+        dry_run=DRY_RUN,
+    ) if AUTO_CONNECT_ENABLED else ""
+
+    task = build_linkedin_reply_task(logged_in)
+    task = task + f"""
+  ADDITIONAL INSTRUCTIONS:
+  {sentiment_instructions}
+  {connect_instructions}
+"""
+    async def _run():
+        return await Agent(task=task, llm=llm, browser=browser).run()
+
+    result = await run_with_retry(_run, "LinkedIn-SentimentReply")
+    save_session_timestamp()
+    send_summary("LinkedIn - Sentiment Reply + Auto Connect", [], 0, DRY_RUN)
+    return result
+
+
 async def run_whatsapp_reply_task():
     logger.info("=== WhatsApp Reply === [DRY RUN: %s | VOICE: %s]", DRY_RUN, VOICE_ENABLED)
     async def _run():
@@ -455,38 +478,6 @@ async def run_instagram_reply_task():
     return result
 
 
-# ──────────────────────────────────────────────
-# 14. DAILY JOB (all platforms)
-# ──────────────────────────────────────────────
-async def run_sentiment_reply_task():
-    """Reply to LinkedIn wishes with sentiment-aware messages."""
-    logger.info("=== LinkedIn: Sentiment-Aware Reply === [DRY RUN: %s]", DRY_RUN)
-    logged_in = session_is_valid()
-
-    sentiment_instructions = build_sentiment_instructions() if SENTIMENT_ANALYSIS_ENABLED else ""
-    connect_instructions   = build_auto_connect_task(
-        username=USERNAME,
-        password=PASSWORD,
-        already_logged_in=logged_in,
-        dry_run=DRY_RUN,
-    ) if AUTO_CONNECT_ENABLED else ""
-
-    task = build_linkedin_reply_task(logged_in)
-    # Inject sentiment + connect instructions into task
-    task = task + f"""
-  ADDITIONAL INSTRUCTIONS:
-  {sentiment_instructions}
-  {connect_instructions}
-"""
-    async def _run():
-        return await Agent(task=task, llm=llm, browser=browser).run()
-
-    result = await run_with_retry(_run, "LinkedIn-SentimentReply")
-    save_session_timestamp()
-    send_summary("LinkedIn - Sentiment Reply + Auto Connect", [], 0, DRY_RUN)
-    return result
-
-
 async def run_calendar_export():
     """Scrape LinkedIn birthdays and export to .ics file."""
     logger.info("=== Birthday Calendar Export ===")
@@ -525,7 +516,6 @@ async def run_followup_task():
     result = await run_with_retry(_run, "FollowUp")
     save_session_timestamp()
 
-    # Mark all as sent (in live mode)
     if not DRY_RUN:
         for item in pending:
             mark_followup_sent(item["id"])
@@ -535,30 +525,27 @@ async def run_followup_task():
     return result
 
 
+# ──────────────────────────────────────────────
+# 14. DAILY JOB (all platforms)
+# ──────────────────────────────────────────────
 async def daily_job():
     logger.info("⏰ Daily job started.")
     try:
-        # LinkedIn
         if ENABLE_LINKEDIN:
             await run_birthday_detection_task()
             await run_linkedin_reply_task()
 
-        # WhatsApp
         if ENABLE_WHATSAPP:
             await run_whatsapp_reply_task()
 
-        # Facebook
         if ENABLE_FACEBOOK:
             await run_facebook_reply_task()
 
-        # Instagram
         if ENABLE_INSTAGRAM:
             await run_instagram_reply_task()
 
-        # Follow-up messages (2-3 days after birthday)
         await run_followup_task()
 
-        # Sentiment-aware reply + auto connect
         if SENTIMENT_ANALYSIS_ENABLED or AUTO_CONNECT_ENABLED:
             await run_sentiment_reply_task()
 
@@ -597,17 +584,17 @@ async def close_browser():
 # ──────────────────────────────────────────────
 async def main():
     init_db()
+    init_followup_table()
+    init_connections_table()
     try:
-        # ── Choose what to run ────────────────────────
-
-        # Run a single platform immediately (good for testing):
+        # Run a single task immediately (uncomment to use):
         # await run_github_task()
         # await run_linkedin_reply_task()
         # await run_birthday_detection_task()
-        # await run_ai_custom_wish_task()     # AI-generated unique wishes
-        # await run_followup_task()            # Follow-up messages
-        # await run_calendar_export()          # Export birthdays to .ics
-        # await run_sentiment_reply_task()     # Sentiment-aware reply + auto connect
+        # await run_ai_custom_wish_task()
+        # await run_sentiment_reply_task()
+        # await run_followup_task()
+        # await run_calendar_export()
         # await run_whatsapp_reply_task()
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
