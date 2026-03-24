@@ -24,6 +24,9 @@ from smart_timing import should_send_now, build_timing_instructions
 from sentiment import analyze_sentiment, get_sentiment_reply, build_sentiment_instructions
 from auto_connect import (init_connections_table, get_connects_today,
                            log_connection_request, build_auto_connect_task)
+from memory import (init_memory_table, save_contact_memory,
+                    get_contact_memory, build_memory_context,
+                    generate_memory_aware_wish, build_memory_instructions)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -525,6 +528,52 @@ async def run_followup_task():
     return result
 
 
+async def run_memory_wish_task():
+    """Send birthday wishes that reference last year's context."""
+    logger.info("=== LinkedIn: Memory-Aware Wishes === [DRY RUN: %s]", DRY_RUN)
+    logged_in = session_is_valid()
+
+    task = f"""
+  Open the browser.
+  {"You are already logged into LinkedIn. Skip login." if True else ""}
+  {dry_run_notice()}
+  {filter_notice("LinkedIn-BirthdayDetection")}
+
+  GOAL: Find contacts with birthdays TODAY and send memory-aware wishes.
+
+  For each birthday contact:
+    a) Apply contact filters.
+    b) Visit their LinkedIn profile and note:
+       - First name, job title, company, recent posts or achievements
+    c) Check memory context (will be provided below per contact).
+    d) Generate a wish that references last year's context if available.
+    e) Send the wish (or log if DRY RUN).
+
+  MEMORY SYSTEM:
+  Before wishing each contact, their last year's memory context
+  will be injected. Use it to make the wish feel personal and continuous.
+  If no memory → write a warm first-time wish and note their profile details
+  so they can be remembered next year.
+
+  After sending each wish, save these details for next year:
+    - Their current job title
+    - Their current company
+    - Any notable life events or achievements mentioned in their profile
+    - The wish message you sent
+
+  Stop after 20 contacts. TODAY only.
+  Summary: wished (names + memory used Y/N), skipped (count+reason).
+"""
+
+    async def _run():
+        return await Agent(task=task, llm=llm, browser=browser).run()
+
+    result = await run_with_retry(_run, "LinkedIn-MemoryWish")
+    save_session_timestamp()
+    send_summary("LinkedIn - Memory-Aware Wishes", [], 0, DRY_RUN)
+    return result
+
+
 # ──────────────────────────────────────────────
 # 14. DAILY JOB (all platforms)
 # ──────────────────────────────────────────────
@@ -548,6 +597,10 @@ async def daily_job():
 
         if SENTIMENT_ANALYSIS_ENABLED or AUTO_CONNECT_ENABLED:
             await run_sentiment_reply_task()
+
+        # Memory-aware birthday wishes
+        if MEMORY_ENABLED:
+            await run_memory_wish_task()
 
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
@@ -586,6 +639,7 @@ async def main():
     init_db()
     init_followup_table()
     init_connections_table()
+    init_memory_table()
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
@@ -598,6 +652,7 @@ async def main():
         # await run_whatsapp_reply_task()
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
+        # await run_memory_wish_task()         # Memory-aware wishes
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
