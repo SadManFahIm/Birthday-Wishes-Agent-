@@ -27,6 +27,9 @@ from auto_connect import (init_connections_table, get_connects_today,
 from memory import (init_memory_table, save_contact_memory,
                     get_contact_memory, build_memory_context,
                     generate_memory_aware_wish, build_memory_instructions)
+from post_engagement import (init_engagement_table, log_engagement,
+                              run_post_engagement)
+from birthday_reminder import (init_reminder_table, run_birthday_reminder)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -574,6 +577,41 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_birthday_reminder_task():
+    """Send reminder emails for tomorrow's birthdays."""
+    logger.info("=== Birthday Reminder Email === [DRY RUN: %s]", DRY_RUN)
+    await run_birthday_reminder(
+        llm=llm,
+        browser=browser,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN,
+    )
+
+
+async def run_post_engagement_task():
+    """Like and comment on birthday contacts' latest LinkedIn posts."""
+    logger.info("=== LinkedIn Post Engagement === [DRY RUN: %s | MODE: %s]",
+                DRY_RUN, ENGAGEMENT_MODE)
+
+    # Sample contacts — in production these come from birthday detection result
+    sample_contacts = [
+        {"name": "Birthday Contact", "profile_url": "", "relationship": "colleague"}
+    ]
+
+    result = await run_post_engagement(
+        llm=llm,
+        browser=browser,
+        birthday_contacts=sample_contacts,
+        dry_run=DRY_RUN,
+        engagement_mode=ENGAGEMENT_MODE,
+        max_engagements=MAX_ENGAGEMENTS_PER_DAY,
+    )
+    send_summary("LinkedIn - Post Engagement", [], 0, DRY_RUN)
+    return result
+
+
 # ──────────────────────────────────────────────
 # 14. DAILY JOB (all platforms)
 # ──────────────────────────────────────────────
@@ -601,6 +639,14 @@ async def daily_job():
         # Memory-aware birthday wishes
         if MEMORY_ENABLED:
             await run_memory_wish_task()
+
+        # Post engagement (like + comment on birthday contacts' posts)
+        if POST_ENGAGEMENT_ENABLED:
+            await run_post_engagement_task()
+
+        # Birthday reminder email for tomorrow's birthdays
+        if BIRTHDAY_REMINDER_ENABLED:
+            await run_birthday_reminder_task()
 
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
@@ -640,6 +686,8 @@ async def main():
     init_followup_table()
     init_connections_table()
     init_memory_table()
+    init_engagement_table()
+    init_reminder_table()
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
@@ -653,6 +701,8 @@ async def main():
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
         # await run_memory_wish_task()         # Memory-aware wishes
+        # await run_post_engagement_task()    # Like + comment on posts
+        # await run_birthday_reminder_task()  # Reminder email for tomorrow's birthdays
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
