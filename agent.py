@@ -29,6 +29,7 @@ from memory import (init_memory_table, save_contact_memory,
                     generate_memory_aware_wish, build_memory_instructions)
 from post_engagement import (init_engagement_table, log_engagement,
                               run_post_engagement)
+from birthday_reminder import (init_reminder_table, run_birthday_reminder)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -576,6 +577,19 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_birthday_reminder_task():
+    """Send reminder emails for tomorrow's birthdays."""
+    logger.info("=== Birthday Reminder Email === [DRY RUN: %s]", DRY_RUN)
+    await run_birthday_reminder(
+        llm=llm,
+        browser=browser,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN,
+    )
+
+
 async def run_post_engagement_task():
     """Like and comment on birthday contacts' latest LinkedIn posts."""
     logger.info("=== LinkedIn Post Engagement === [DRY RUN: %s | MODE: %s]",
@@ -630,6 +644,10 @@ async def daily_job():
         if POST_ENGAGEMENT_ENABLED:
             await run_post_engagement_task()
 
+        # Birthday reminder email for tomorrow's birthdays
+        if BIRTHDAY_REMINDER_ENABLED:
+            await run_birthday_reminder_task()
+
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
 
@@ -669,6 +687,7 @@ async def main():
     init_connections_table()
     init_memory_table()
     init_engagement_table()
+    init_reminder_table()
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
@@ -683,6 +702,7 @@ async def main():
         # await run_instagram_reply_task()
         # await run_memory_wish_task()         # Memory-aware wishes
         # await run_post_engagement_task()    # Like + comment on posts
+        # await run_birthday_reminder_task()  # Reminder email for tomorrow's birthdays
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
