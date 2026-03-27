@@ -30,6 +30,7 @@ from memory import (init_memory_table, save_contact_memory,
 from post_engagement import (init_engagement_table, log_engagement,
                               run_post_engagement)
 from birthday_reminder import (init_reminder_table, run_birthday_reminder)
+from contact_notes import (init_notes_table, add_note, get_notes, build_notes_context)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -688,6 +689,7 @@ async def main():
     init_memory_table()
     init_engagement_table()
     init_reminder_table()
+    init_notes_table()
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
