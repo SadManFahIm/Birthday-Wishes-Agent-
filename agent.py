@@ -31,6 +31,7 @@ from post_engagement import (init_engagement_table, log_engagement,
                               run_post_engagement)
 from birthday_reminder import (init_reminder_table, run_birthday_reminder)
 from contact_notes import (init_notes_table, add_note, get_notes, build_notes_context)
+from wish_scorer import score_wish, generate_scored_wish, build_scorer_instructions
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
