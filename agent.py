@@ -32,6 +32,7 @@ from post_engagement import (init_engagement_table, log_engagement,
 from birthday_reminder import (init_reminder_table, run_birthday_reminder)
 from contact_notes import (init_notes_table, add_note, get_notes, build_notes_context)
 from wish_scorer import score_wish, generate_scored_wish, build_scorer_instructions
+from group_birthday import (init_group_birthday_table, run_group_birthday_detection)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -579,6 +580,22 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_group_birthday_task():
+    """Detect and engage with birthday posts in LinkedIn Groups."""
+    logger.info("=== Group Birthday Detection === [DRY RUN: %s]", DRY_RUN)
+    await run_group_birthday_detection(
+        llm=llm,
+        browser=browser,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN,
+        max_engagements=MAX_GROUP_ENGAGEMENTS,
+        comment_enabled=GROUP_COMMENT_ENABLED,
+        dm_enabled=GROUP_DM_ENABLED,
+    )
+
+
 async def run_birthday_reminder_task():
     """Send reminder emails for tomorrow's birthdays."""
     logger.info("=== Birthday Reminder Email === [DRY RUN: %s]", DRY_RUN)
@@ -650,6 +667,10 @@ async def daily_job():
         if BIRTHDAY_REMINDER_ENABLED:
             await run_birthday_reminder_task()
 
+        # Group birthday detection
+        if GROUP_BIRTHDAY_ENABLED:
+            await run_group_birthday_task()
+
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
 
@@ -691,6 +712,7 @@ async def main():
     init_engagement_table()
     init_reminder_table()
     init_notes_table()
+    init_group_birthday_table()
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
@@ -706,6 +728,7 @@ async def main():
         # await run_memory_wish_task()         # Memory-aware wishes
         # await run_post_engagement_task()    # Like + comment on posts
         # await run_birthday_reminder_task()  # Reminder email for tomorrow's birthdays
+        # await run_group_birthday_task()      # Group birthday detection
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
