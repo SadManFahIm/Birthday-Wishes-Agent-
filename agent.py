@@ -33,6 +33,9 @@ from birthday_reminder import (init_reminder_table, run_birthday_reminder)
 from contact_notes import (init_notes_table, add_note, get_notes, build_notes_context)
 from wish_scorer import score_wish, generate_scored_wish, build_scorer_instructions
 from group_birthday import (init_group_birthday_table, run_group_birthday_detection)
+from connection_tracker import (init_tracker_table, log_interaction,
+                                calculate_strength, get_top_connections,
+                                get_fading_connections, sync_from_history)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -713,6 +716,9 @@ async def main():
     init_reminder_table()
     init_notes_table()
     init_group_birthday_table()
+    init_tracker_table()
+    if CONNECTION_TRACKER_ENABLED:
+        sync_from_history()  # Sync existing history into tracker
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
