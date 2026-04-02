@@ -36,6 +36,7 @@ from group_birthday import (init_group_birthday_table, run_group_birthday_detect
 from connection_tracker import (init_tracker_table, log_interaction,
                                 calculate_strength, get_top_connections,
                                 get_fading_connections, sync_from_history)
+from auto_reply_followup import (init_auto_reply_table, run_auto_reply_followup)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -583,6 +584,20 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_auto_reply_task():
+    """Reply to responses to our birthday wishes and follow-ups."""
+    logger.info("=== Auto Reply to Follow-up === [DRY RUN: %s]", DRY_RUN)
+    await run_auto_reply_followup(
+        llm=llm,
+        browser=browser,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN,
+        max_replies=MAX_AUTO_REPLIES_PER_DAY,
+    )
+
+
 async def run_group_birthday_task():
     """Detect and engage with birthday posts in LinkedIn Groups."""
     logger.info("=== Group Birthday Detection === [DRY RUN: %s]", DRY_RUN)
@@ -674,6 +689,10 @@ async def daily_job():
         if GROUP_BIRTHDAY_ENABLED:
             await run_group_birthday_task()
 
+        # Auto reply to follow-up responses
+        if AUTO_REPLY_FOLLOWUP_ENABLED:
+            await run_auto_reply_task()
+
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
 
@@ -717,6 +736,7 @@ async def main():
     init_notes_table()
     init_group_birthday_table()
     init_tracker_table()
+    init_auto_reply_table()
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()  # Sync existing history into tracker
     try:
@@ -735,6 +755,7 @@ async def main():
         # await run_post_engagement_task()    # Like + comment on posts
         # await run_birthday_reminder_task()  # Reminder email for tomorrow's birthdays
         # await run_group_birthday_task()      # Group birthday detection
+        # await run_auto_reply_task()           # Auto reply to follow-up responses
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
