@@ -1,0 +1,24 @@
+# Streamlit configuration
+# Dark/Light mode toggle is available via the top-right menu (☀️/🌙)
+# Users can switch between dark and light mode from any dashboard.
+
+[theme]
+# Default theme — users can override via Settings menu in the app
+primaryColor        = "#4CAF50"
+backgroundColor     = "#0E1117"
+secondaryBackgroundColor = "#1E2329"
+textColor           = "#FAFAFA"
+font                = "sans serif"
+
+[server]
+headless             = true
+enableCORS           = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+# Allows users to toggle dark/light mode from the top-right menu
+showSidebarNavigation = true
+toolbarMode = "auto"
