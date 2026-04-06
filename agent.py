@@ -38,6 +38,7 @@ from connection_tracker import (init_tracker_table, log_interaction,
                                 get_fading_connections, sync_from_history)
 from auto_reply_followup import (init_auto_reply_table, run_auto_reply_followup)
 from tone_matching import detect_tone, get_tone_matched_reply, build_tone_matching_instructions
+from occasion_detection import run_occasion_detection
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -585,6 +586,19 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_occasion_detection_task():
+    """Scan LinkedIn for life events and send congratulations."""
+    logger.info("=== Occasion Detection === [DRY RUN: %s]", DRY_RUN)
+    await run_occasion_detection(
+        llm=llm,
+        browser=browser,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN,
+    )
+
+
 async def run_auto_reply_task():
     """Reply to responses to our birthday wishes and follow-ups."""
     logger.info("=== Auto Reply to Follow-up === [DRY RUN: %s]", DRY_RUN)
@@ -694,6 +708,10 @@ async def daily_job():
         if AUTO_REPLY_FOLLOWUP_ENABLED:
             await run_auto_reply_task()
 
+        # Occasion detection (promotion, new job, graduation, etc.)
+        if OCCASION_DETECTION_ENABLED:
+            await run_occasion_detection_task()
+
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
 
@@ -757,6 +775,7 @@ async def main():
         # await run_birthday_reminder_task()  # Reminder email for tomorrow's birthdays
         # await run_group_birthday_task()      # Group birthday detection
         # await run_auto_reply_task()           # Auto reply to follow-up responses
+        # await run_occasion_detection_task()  # Occasion detection & congratulations
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
