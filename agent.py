@@ -39,6 +39,7 @@ from connection_tracker import (init_tracker_table, log_interaction,
 from auto_reply_followup import (init_auto_reply_table, run_auto_reply_followup)
 from tone_matching import detect_tone, get_tone_matched_reply, build_tone_matching_instructions
 from occasion_detection import run_occasion_detection
+from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
