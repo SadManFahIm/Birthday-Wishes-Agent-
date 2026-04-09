@@ -40,6 +40,7 @@ from auto_reply_followup import (init_auto_reply_table, run_auto_reply_followup)
 from tone_matching import detect_tone, get_tone_matched_reply, build_tone_matching_instructions
 from occasion_detection import run_occasion_detection
 from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
+from relationship_health import (init_health_table, run_relationship_health_report)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -587,6 +588,18 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_health_report_task():
+    """Generate and send weekly relationship health report."""
+    logger.info("=== Weekly Health Report === [DRY RUN: %s]", DRY_RUN)
+    report = await run_relationship_health_report(dry_run=DRY_RUN)
+    logger.info(
+        "📊 Health report: %d contacts | Avg: %.1f",
+        report.get("total_contacts", 0),
+        report.get("average_score", 0),
+    )
+    return report
+
+
 async def run_occasion_detection_task():
     """Scan LinkedIn for life events and send congratulations."""
     logger.info("=== Occasion Detection === [DRY RUN: %s]", DRY_RUN)
@@ -713,6 +726,12 @@ async def daily_job():
         if OCCASION_DETECTION_ENABLED:
             await run_occasion_detection_task()
 
+        # Weekly relationship health report (Mondays only)
+        if HEALTH_REPORT_ENABLED:
+            from datetime import date
+            if date.today().strftime("%A").lower() == HEALTH_REPORT_DAY.lower():
+                await run_health_report_task()
+
     except Exception as e:
         logger.error("❌ Daily job error: %s", e)
 
@@ -757,6 +776,7 @@ async def main():
     init_group_birthday_table()
     init_tracker_table()
     init_auto_reply_table()
+    init_health_table()
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()  # Sync existing history into tracker
     try:
@@ -777,6 +797,7 @@ async def main():
         # await run_group_birthday_task()      # Group birthday detection
         # await run_auto_reply_task()           # Auto reply to follow-up responses
         # await run_occasion_detection_task()  # Occasion detection & congratulations
+        # await run_health_report_task()        # Weekly relationship health report
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
