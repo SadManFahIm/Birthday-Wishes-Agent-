@@ -43,6 +43,7 @@ from multilang_reply import detect_language, get_multilang_reply, build_multilan
 from relationship_health import (init_health_table, run_relationship_health_report)
 from best_time_connect import (init_activity_table, get_best_send_time,
                                run_best_time_analysis, build_timing_notice)
+from dm_campaign import (init_campaign_table, run_dm_campaign, get_campaign_stats)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -590,6 +591,30 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_dm_campaign_task():
+    """Run a LinkedIn DM campaign for new or existing connections."""
+    logger.info("=== LinkedIn DM Campaign: %s === [DRY RUN: %s]",
+                CAMPAIGN_TYPE.upper(), DRY_RUN)
+    result = await run_dm_campaign(
+        llm=llm,
+        browser=browser,
+        campaign_type=CAMPAIGN_TYPE,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN,
+        max_dms=MAX_DM_PER_DAY,
+        cooldown_days=DM_COOLDOWN_DAYS,
+        variant=CAMPAIGN_VARIANT,
+    )
+    stats = get_campaign_stats()
+    logger.info(
+        "📊 Campaign stats: %d sent | %.1f%% reply rate",
+        stats.get("total_sent", 0), stats.get("reply_rate", 0),
+    )
+    return result
+
+
 async def run_best_time_task(contacts: list[dict] = None):
     """Analyze activity patterns and find best time to connect."""
     logger.info("=== Best Time to Connect Analysis ===")
@@ -750,6 +775,10 @@ async def daily_job():
         if OCCASION_DETECTION_ENABLED:
             await run_occasion_detection_task()
 
+        # LinkedIn DM Campaign
+        if DM_CAMPAIGN_ENABLED:
+            await run_dm_campaign_task()
+
         # Weekly relationship health report (Mondays only)
         if HEALTH_REPORT_ENABLED:
             from datetime import date
@@ -802,6 +831,7 @@ async def main():
     init_auto_reply_table()
     init_health_table()
     init_activity_table()
+    init_campaign_table()
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()  # Sync existing history into tracker
     try:
@@ -824,6 +854,7 @@ async def main():
         # await run_occasion_detection_task()  # Occasion detection & congratulations
         # await run_health_report_task()        # Weekly relationship health report
         # await run_best_time_task()            # Analyze best time to connect
+        # await run_dm_campaign_task()          # LinkedIn DM campaign
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
