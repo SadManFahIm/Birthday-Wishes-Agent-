@@ -41,6 +41,8 @@ from tone_matching import detect_tone, get_tone_matched_reply, build_tone_matchi
 from occasion_detection import run_occasion_detection
 from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
 from relationship_health import (init_health_table, run_relationship_health_report)
+from best_time_connect import (init_activity_table, get_best_send_time,
+                               run_best_time_analysis, build_timing_notice)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -588,6 +590,28 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_best_time_task(contacts: list[dict] = None):
+    """Analyze activity patterns and find best time to connect."""
+    logger.info("=== Best Time to Connect Analysis ===")
+    if not contacts:
+        logger.info("📭 No contacts provided for activity analysis.")
+        return []
+    results = await run_best_time_analysis(
+        llm=llm,
+        browser=browser,
+        contacts=contacts,
+        already_logged_in=session_is_valid(),
+        username=USERNAME,
+        password=PASSWORD,
+    )
+    for r in results:
+        logger.info(
+            "⏰ Best time for %s: %s at %d:00",
+            r["contact"], r.get("best_day"), r.get("best_hour", 9),
+        )
+    return results
+
+
 async def run_health_report_task():
     """Generate and send weekly relationship health report."""
     logger.info("=== Weekly Health Report === [DRY RUN: %s]", DRY_RUN)
@@ -777,6 +801,7 @@ async def main():
     init_tracker_table()
     init_auto_reply_table()
     init_health_table()
+    init_activity_table()
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()  # Sync existing history into tracker
     try:
@@ -798,6 +823,7 @@ async def main():
         # await run_auto_reply_task()           # Auto reply to follow-up responses
         # await run_occasion_detection_task()  # Occasion detection & congratulations
         # await run_health_report_task()        # Weekly relationship health report
+        # await run_best_time_task()            # Analyze best time to connect
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
