@@ -44,6 +44,8 @@ from relationship_health import (init_health_table, run_relationship_health_repo
 from best_time_connect import (init_activity_table, get_best_send_time,
                                run_best_time_analysis, build_timing_notice)
 from dm_campaign import (init_campaign_table, run_dm_campaign, get_campaign_stats)
+from contact_categorizer import (init_categorizer_table, run_contact_categorizer,
+                                  get_contacts_by_category, get_category_stats)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -591,6 +593,25 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_categorizer_task():
+    """Auto-categorize LinkedIn contacts by industry, seniority, location."""
+    logger.info("=== Contact Categorizer === [MAX: %d]", CATEGORIZER_MAX_CONTACTS)
+    count = await run_contact_categorizer(
+        llm=llm,
+        browser=browser,
+        username=USERNAME,
+        password=PASSWORD,
+        already_logged_in=session_is_valid(),
+        max_contacts=CATEGORIZER_MAX_CONTACTS,
+    )
+    stats = get_category_stats()
+    logger.info(
+        "🏷️  Categorized %d contacts | Industries: %s",
+        count, list(stats.get("by_industry", {}).keys())[:3],
+    )
+    return count
+
+
 async def run_dm_campaign_task():
     """Run a LinkedIn DM campaign for new or existing connections."""
     logger.info("=== LinkedIn DM Campaign: %s === [DRY RUN: %s]",
@@ -779,6 +800,12 @@ async def daily_job():
         if DM_CAMPAIGN_ENABLED:
             await run_dm_campaign_task()
 
+        # Contact categorizer (runs weekly on Sunday)
+        if CONTACT_CATEGORIZER_ENABLED:
+            from datetime import date
+            if date.today().strftime("%A") == "Sunday":
+                await run_categorizer_task()
+
         # Weekly relationship health report (Mondays only)
         if HEALTH_REPORT_ENABLED:
             from datetime import date
@@ -832,6 +859,7 @@ async def main():
     init_health_table()
     init_activity_table()
     init_campaign_table()
+    init_categorizer_table()
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()  # Sync existing history into tracker
     try:
@@ -855,6 +883,7 @@ async def main():
         # await run_health_report_task()        # Weekly relationship health report
         # await run_best_time_task()            # Analyze best time to connect
         # await run_dm_campaign_task()          # LinkedIn DM campaign
+        # await run_categorizer_task()          # Auto-categorize contacts
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
