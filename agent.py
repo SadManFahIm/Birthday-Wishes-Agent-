@@ -46,6 +46,8 @@ from best_time_connect import (init_activity_table, get_best_send_time,
 from dm_campaign import (init_campaign_table, run_dm_campaign, get_campaign_stats)
 from contact_categorizer import (init_categorizer_table, run_contact_categorizer,
                                   get_contacts_by_category, get_category_stats)
+from ab_testing import (init_ab_table, get_ab_variant, log_ab_send,
+                         log_ab_reply, get_ab_results, generate_ab_wish)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -860,6 +862,7 @@ async def main():
     init_activity_table()
     init_campaign_table()
     init_categorizer_table()
+    init_ab_table()
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()  # Sync existing history into tracker
     try:
