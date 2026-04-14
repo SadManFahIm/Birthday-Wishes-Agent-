@@ -48,6 +48,9 @@ from contact_categorizer import (init_categorizer_table, run_contact_categorizer
                                   get_contacts_by_category, get_category_stats)
 from ab_testing import (init_ab_table, get_ab_variant, log_ab_send,
                          log_ab_reply, get_ab_results, generate_ab_wish)
+from rag_memory import (init_rag_memory, save_memory_to_rag,
+                         retrieve_relevant_memory, generate_rag_wish,
+                         migrate_from_sqlite_memory)
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -595,6 +598,25 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_rag_wish_task():
+    """Generate birthday wishes using RAG-based memory context."""
+    logger.info("=== RAG Birthday Wishes === [DRY RUN: %s]", DRY_RUN)
+    logged_in = session_is_valid()
+    task = build_birthday_detection_task(logged_in)
+    task += """
+
+  ADDITIONAL: Use the RAG memory system to enrich each wish.
+  Before wishing each contact, retrieve their memory context
+  from the vector database and reference it naturally in the wish.
+"""
+    async def _run():
+        return await Agent(task=task, llm=llm, browser=browser).run()
+    result = await run_with_retry(_run, "RAG-BirthdayWish")
+    save_session_timestamp()
+    send_summary("RAG Birthday Wishes", [], 0, DRY_RUN)
+    return result
+
+
 async def run_categorizer_task():
     """Auto-categorize LinkedIn contacts by industry, seniority, location."""
     logger.info("=== Contact Categorizer === [MAX: %d]", CATEGORIZER_MAX_CONTACTS)
@@ -863,6 +885,9 @@ async def main():
     init_campaign_table()
     init_categorizer_table()
     init_ab_table()
+    if RAG_MEMORY_ENABLED:
+        init_rag_memory()
+        migrate_from_sqlite_memory()  # One-time migration from SQLite
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()  # Sync existing history into tracker
     try:
@@ -887,6 +912,7 @@ async def main():
         # await run_best_time_task()            # Analyze best time to connect
         # await run_dm_campaign_task()          # LinkedIn DM campaign
         # await run_categorizer_task()          # Auto-categorize contacts
+        # await run_rag_wish_task()             # RAG-based memory wishes
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
