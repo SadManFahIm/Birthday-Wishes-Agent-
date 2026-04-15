@@ -51,6 +51,7 @@ from ab_testing import (init_ab_table, get_ab_variant, log_ab_send,
 from rag_memory import (init_rag_memory, save_memory_to_rag,
                          retrieve_relevant_memory, generate_rag_wish,
                          migrate_from_sqlite_memory)
+from voice_to_text import run_voice_reply_task as run_voice_to_text_task
 from voice import generate_voice
 
 # ──────────────────────────────────────────────
@@ -598,6 +599,26 @@ async def run_memory_wish_task():
     return result
 
 
+async def run_voice_to_text_reply_task():
+    """Detect WhatsApp voice notes, transcribe, and reply to birthday wishes."""
+    logger.info("=== Voice-to-Text Reply === [DRY RUN: %s | ENGINE: %s]",
+                DRY_RUN, TRANSCRIPTION_ENGINE)
+    result = await run_voice_to_text_task(
+        llm=llm,
+        browser=browser,
+        already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN,
+        username=USERNAME,
+        password=PASSWORD,
+        transcription_engine=TRANSCRIPTION_ENGINE,
+        wish_detection_rules=WISH_DETECTION_RULES,
+        reply_templates=PERSONALIZED_REPLY_TEMPLATES,
+        filter_notice=filter_notice("WhatsApp-VoiceReply"),
+    )
+    send_summary("WhatsApp - Voice-to-Text Reply", [], 0, DRY_RUN)
+    return result
+
+
 async def run_rag_wish_task():
     """Generate birthday wishes using RAG-based memory context."""
     logger.info("=== RAG Birthday Wishes === [DRY RUN: %s]", DRY_RUN)
@@ -913,6 +934,7 @@ async def main():
         # await run_dm_campaign_task()          # LinkedIn DM campaign
         # await run_categorizer_task()          # Auto-categorize contacts
         # await run_rag_wish_task()             # RAG-based memory wishes
+        # await run_voice_to_text_reply_task()  # Voice note transcription & reply
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()

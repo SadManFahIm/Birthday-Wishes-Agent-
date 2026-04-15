@@ -12,3 +12,5 @@ pandas
 chromadb
 sentence-transformers
 langchain-chroma
+openai-whisper
+soundfile
