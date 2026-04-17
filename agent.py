@@ -2,9 +2,13 @@ import asyncio
 import json
 import logging
 import sqlite3
+import sys
 import time
+from dataclasses import dataclass, field
 from datetime import date, datetime
+from enum import Enum
 from pathlib import Path
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from browser_use import Agent, Browser, BrowserConfig
@@ -54,6 +58,7 @@ from rag_memory import (init_rag_memory, save_memory_to_rag,
 from voice_to_text import run_voice_reply_task as run_voice_to_text_task
 from voice import generate_voice
 
+
 # ──────────────────────────────────────────────
 # 1. LOGGING SETUP
 # ──────────────────────────────────────────────
@@ -102,6 +107,40 @@ SENTIMENT_ANALYSIS_ENABLED = True
 # ── AUTO-CONNECT ──────────────────────────────
 AUTO_CONNECT_ENABLED = True
 MAX_CONNECTS_PER_DAY = 10
+
+# ── FEATURE FLAGS ─────────────────────────────
+MEMORY_ENABLED             = True
+POST_ENGAGEMENT_ENABLED    = True
+BIRTHDAY_REMINDER_ENABLED  = True
+GROUP_BIRTHDAY_ENABLED     = True
+AUTO_REPLY_FOLLOWUP_ENABLED = True
+OCCASION_DETECTION_ENABLED = True
+DM_CAMPAIGN_ENABLED        = False
+CONTACT_CATEGORIZER_ENABLED = True
+HEALTH_REPORT_ENABLED      = True
+RAG_MEMORY_ENABLED         = False
+CONNECTION_TRACKER_ENABLED = True
+
+# ── MULTI-AGENT ORCHESTRATOR SETTINGS ─────────
+# True  → সব sub-agents parallel এ চলবে (faster)
+# False → sequential চলবে (debug / rate-limit এ ব্যবহার করো)
+PARALLEL_MODE            = True
+MAX_BROWSER_CONCURRENCY  = 3   # একসাথে সর্বোচ্চ কতটা browser task চলবে
+
+# ── MISC SETTINGS ─────────────────────────────
+TRANSCRIPTION_ENGINE       = "whisper"
+ENGAGEMENT_MODE            = "like_and_comment"
+MAX_ENGAGEMENTS_PER_DAY    = 10
+MAX_GROUP_ENGAGEMENTS      = 5
+GROUP_COMMENT_ENABLED      = True
+GROUP_DM_ENABLED           = True
+MAX_AUTO_REPLIES_PER_DAY   = 20
+HEALTH_REPORT_DAY          = "Monday"
+CATEGORIZER_MAX_CONTACTS   = 100
+CAMPAIGN_TYPE              = "new_connections"
+MAX_DM_PER_DAY             = 20
+DM_COOLDOWN_DAYS           = 30
+CAMPAIGN_VARIANT           = "A"
 
 if not USERNAME or not PASSWORD:
     raise EnvironmentError("❌ USERNAME or PASSWORD missing in .env")
@@ -560,7 +599,7 @@ async def run_memory_wish_task():
 
     task = f"""
   Open the browser.
-  {"You are already logged into LinkedIn. Skip login." if True else ""}
+  {"You are already logged into LinkedIn. Skip login." if logged_in else ""}
   {dry_run_notice()}
   {filter_notice("LinkedIn-BirthdayDetection")}
 
@@ -776,7 +815,6 @@ async def run_post_engagement_task():
     logger.info("=== LinkedIn Post Engagement === [DRY RUN: %s | MODE: %s]",
                 DRY_RUN, ENGAGEMENT_MODE)
 
-    # Sample contacts — in production these come from birthday detection result
     sample_contacts = [
         {"name": "Birthday Contact", "profile_url": "", "relationship": "colleague"}
     ]
@@ -793,72 +831,275 @@ async def run_post_engagement_task():
     return result
 
 
-# ──────────────────────────────────────────────
-# 14. DAILY JOB (all platforms)
-# ──────────────────────────────────────────────
-async def daily_job():
-    logger.info("⏰ Daily job started.")
-    try:
+# ══════════════════════════════════════════════════════════════
+# 14. MULTI-AGENT ORCHESTRATOR  (Feature 4)
+# ══════════════════════════════════════════════════════════════
+
+class AgentStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED  = "failed"
+    SKIPPED = "skipped"
+
+
+@dataclass
+class SubAgentResult:
+    name:       str
+    status:     AgentStatus
+    result:     Any   = None
+    error:      str   = ""
+    duration_s: float = 0.0
+
+    def __str__(self):
+        icon = {
+            AgentStatus.SUCCESS: "✅",
+            AgentStatus.FAILED:  "❌",
+            AgentStatus.SKIPPED: "⏭️",
+            AgentStatus.RUNNING: "⏳",
+            AgentStatus.PENDING: "🕐",
+        }[self.status]
+        return (
+            f"{icon} [{self.name}] {self.status.value.upper()} "
+            f"({self.duration_s:.1f}s)"
+            + (f" — {self.error}" if self.error else "")
+        )
+
+
+class OrchestratorAgent:
+    """
+    Orchestrator যে সব sub-agents কে manage করে।
+
+    Architecture:
+    ┌─────────────────────────────────────────────────┐
+    │              OrchestratorAgent                  │
+    │  ┌──────────────────────────────────────────┐   │
+    │  │           Task Queue / Plan              │   │
+    │  └──────────────────────────────────────────┘   │
+    │        │            │             │              │
+    │  ┌─────▼──────┐ ┌───▼──────┐ ┌───▼──────┐      │
+    │  │ Sub-Agent 1│ │Sub-Agent2│ │Sub-Agent3│ ...  │
+    │  │  LinkedIn  │ │ WhatsApp │ │ Facebook │      │
+    │  │  Birthday  │ │  Reply   │ │  Reply   │      │
+    │  └────────────┘ └──────────┘ └──────────┘      │
+    │        │            │             │              │
+    │  ┌─────▼────────────▼─────────────▼──────────┐  │
+    │  │            Result Aggregator               │  │
+    │  └────────────────────────────────────────────┘  │
+    └─────────────────────────────────────────────────┘
+
+    asyncio.Semaphore দিয়ে browser concurrency control করা হয়।
+    এতে সব task একসাথে শুরু হয়, কিন্তু একসাথে সর্বোচ্চ
+    MAX_BROWSER_CONCURRENCY টা browser ব্যবহার করে।
+    """
+
+    def __init__(self, max_browser_concurrency: int = MAX_BROWSER_CONCURRENCY):
+        self._browser_sem = asyncio.Semaphore(max_browser_concurrency)
+        self.results: list[SubAgentResult] = []
+
+    async def _run_sub_agent(
+        self,
+        name: str,
+        coro_factory,
+        retries: int = 2,
+        retry_delay: int = 5,
+    ) -> SubAgentResult:
+        """একটা sub-agent run করে — semaphore + retry built-in।"""
+        start = time.monotonic()
+        last_error = ""
+
+        async with self._browser_sem:
+            logger.info("🤖 [Orchestrator] Starting sub-agent: %s", name)
+            for attempt in range(1, retries + 1):
+                try:
+                    result = await coro_factory()
+                    duration = time.monotonic() - start
+                    logger.info("✅ [%s] Done in %.1fs", name, duration)
+                    return SubAgentResult(
+                        name=name,
+                        status=AgentStatus.SUCCESS,
+                        result=result,
+                        duration_s=duration,
+                    )
+                except Exception as e:
+                    last_error = str(e)
+                    logger.warning("⚠️ [%s] Attempt %d/%d failed: %s",
+                                   name, attempt, retries, e)
+                    if attempt < retries:
+                        await asyncio.sleep(retry_delay)
+
+        duration = time.monotonic() - start
+        logger.error("💀 [%s] All attempts failed.", name)
+        return SubAgentResult(
+            name=name,
+            status=AgentStatus.FAILED,
+            error=last_error,
+            duration_s=duration,
+        )
+
+    def _build_task_list(self) -> list[tuple[str, Any]]:
+        """
+        Config toggles দেখে enabled sub-agents এর list বানায়।
+        প্রতিটা entry: (name, coro_factory)
+        """
+        tasks = []
+
         if ENABLE_LINKEDIN:
-            await run_birthday_detection_task()
-            await run_linkedin_reply_task()
+            tasks.append(("LinkedIn-BirthdayDetection",
+                           lambda: run_birthday_detection_task()))
+            tasks.append(("LinkedIn-ReplyToWishes",
+                           lambda: run_linkedin_reply_task()))
 
         if ENABLE_WHATSAPP:
-            await run_whatsapp_reply_task()
+            tasks.append(("WhatsApp-Reply",
+                           lambda: run_whatsapp_reply_task()))
 
         if ENABLE_FACEBOOK:
-            await run_facebook_reply_task()
+            tasks.append(("Facebook-Reply",
+                           lambda: run_facebook_reply_task()))
 
         if ENABLE_INSTAGRAM:
-            await run_instagram_reply_task()
+            tasks.append(("Instagram-Reply",
+                           lambda: run_instagram_reply_task()))
 
-        await run_followup_task()
+        tasks.append(("FollowUp-Messages",
+                       lambda: run_followup_task()))
 
         if SENTIMENT_ANALYSIS_ENABLED or AUTO_CONNECT_ENABLED:
-            await run_sentiment_reply_task()
+            tasks.append(("Sentiment-AutoConnect",
+                           lambda: run_sentiment_reply_task()))
 
-        # Memory-aware birthday wishes
         if MEMORY_ENABLED:
-            await run_memory_wish_task()
+            tasks.append(("Memory-Aware-Wishes",
+                           lambda: run_memory_wish_task()))
 
-        # Post engagement (like + comment on birthday contacts' posts)
         if POST_ENGAGEMENT_ENABLED:
-            await run_post_engagement_task()
+            tasks.append(("Post-Engagement",
+                           lambda: run_post_engagement_task()))
 
-        # Birthday reminder email for tomorrow's birthdays
         if BIRTHDAY_REMINDER_ENABLED:
-            await run_birthday_reminder_task()
+            tasks.append(("Birthday-Reminder",
+                           lambda: run_birthday_reminder_task()))
 
-        # Group birthday detection
         if GROUP_BIRTHDAY_ENABLED:
-            await run_group_birthday_task()
+            tasks.append(("Group-Birthday",
+                           lambda: run_group_birthday_task()))
 
-        # Auto reply to follow-up responses
         if AUTO_REPLY_FOLLOWUP_ENABLED:
-            await run_auto_reply_task()
+            tasks.append(("Auto-Reply-FollowUp",
+                           lambda: run_auto_reply_task()))
 
-        # Occasion detection (promotion, new job, graduation, etc.)
         if OCCASION_DETECTION_ENABLED:
-            await run_occasion_detection_task()
+            tasks.append(("Occasion-Detection",
+                           lambda: run_occasion_detection_task()))
 
-        # LinkedIn DM Campaign
         if DM_CAMPAIGN_ENABLED:
-            await run_dm_campaign_task()
+            tasks.append(("DM-Campaign",
+                           lambda: run_dm_campaign_task()))
 
-        # Contact categorizer (runs weekly on Sunday)
+        if RAG_MEMORY_ENABLED:
+            tasks.append(("RAG-Wishes",
+                           lambda: run_rag_wish_task()))
+
+        return tasks
+
+    async def run_parallel(self) -> list[SubAgentResult]:
+        """
+        সব sub-agents কে parallel এ run করে।
+        asyncio.gather() দিয়ে সব coroutine একসাথে শুরু হয়।
+        Semaphore browser concurrency limit enforce করে।
+        """
+        wall_start = time.monotonic()
+        task_list  = self._build_task_list()
+
+        if not task_list:
+            logger.warning("⚠️ [Orchestrator] No sub-agents enabled.")
+            return []
+
+        logger.info("=" * 60)
+        logger.info("🎯 [Orchestrator] Parallel run — %d sub-agents", len(task_list))
+        logger.info("   Browser concurrency limit: %d", self._browser_sem._value)
+        logger.info("   DRY_RUN: %s", DRY_RUN)
+        for name, _ in task_list:
+            logger.info("   • %s", name)
+        logger.info("=" * 60)
+
+        # Launch ALL at once — semaphore controls actual browser concurrency
+        coros = [
+            self._run_sub_agent(name, factory)
+            for name, factory in task_list
+        ]
+        self.results = await asyncio.gather(*coros, return_exceptions=False)
+
+        wall_total = time.monotonic() - wall_start
+        self._print_summary(wall_total)
+        return self.results
+
+    async def run_sequential(self) -> list[SubAgentResult]:
+        """Sequential fallback — debug বা rate-limit issue হলে ব্যবহার করো।"""
+        logger.info("🔄 [Orchestrator] Sequential mode (fallback)")
+        results = []
+        for name, factory in self._build_task_list():
+            r = await self._run_sub_agent(name, factory)
+            results.append(r)
+        self.results = results
+        self._print_summary(0)
+        return results
+
+    def _print_summary(self, wall_time: float):
+        success = [r for r in self.results if r.status == AgentStatus.SUCCESS]
+        failed  = [r for r in self.results if r.status == AgentStatus.FAILED]
+        skipped = [r for r in self.results if r.status == AgentStatus.SKIPPED]
+
+        logger.info("=" * 60)
+        logger.info("📊 [Orchestrator] Run Complete")
+        if wall_time > 0:
+            agent_time = sum(r.duration_s for r in self.results)
+            speedup    = agent_time / wall_time if wall_time else 1
+            logger.info("   Wall time   : %.1fs", wall_time)
+            logger.info("   Agent work  : %.1fs", agent_time)
+            logger.info("   Speedup     : %.1fx (vs sequential)", speedup)
+        logger.info("   ✅ Success : %d", len(success))
+        logger.info("   ❌ Failed  : %d", len(failed))
+        logger.info("   ⏭️ Skipped : %d", len(skipped))
+        logger.info("-" * 60)
+        for r in self.results:
+            logger.info("   %s", r)
+        logger.info("=" * 60)
+
+        if failed:
+            logger.error("⚠️ Failed: %s",
+                         ", ".join(r.name for r in failed))
+
+
+# ──────────────────────────────────────────────
+# 15. DAILY JOB
+# ──────────────────────────────────────────────
+async def daily_job():
+    logger.info("⏰ Daily job started. PARALLEL_MODE=%s", PARALLEL_MODE)
+
+    orchestrator = OrchestratorAgent(
+        max_browser_concurrency=MAX_BROWSER_CONCURRENCY
+    )
+
+    if PARALLEL_MODE:
+        # ── Feature 4: Parallel Multi-Agent ──────────────────────
+        await orchestrator.run_parallel()
+    else:
+        # ── Sequential fallback ───────────────────────────────────
+        await orchestrator.run_sequential()
+
+    # Weekly tasks — দিন দেখে চালাতে হয়, তাই orchestrator এর বাইরে রাখা হলো
+    try:
         if CONTACT_CATEGORIZER_ENABLED:
-            from datetime import date
             if date.today().strftime("%A") == "Sunday":
                 await run_categorizer_task()
 
-        # Weekly relationship health report (Mondays only)
         if HEALTH_REPORT_ENABLED:
-            from datetime import date
             if date.today().strftime("%A").lower() == HEALTH_REPORT_DAY.lower():
                 await run_health_report_task()
-
     except Exception as e:
-        logger.error("❌ Daily job error: %s", e)
+        logger.error("❌ Weekly task error: %s", e)
 
 
 async def run_scheduler():
@@ -877,7 +1118,7 @@ async def run_scheduler():
 
 
 # ──────────────────────────────────────────────
-# 15. CLEANUP
+# 16. CLEANUP
 # ──────────────────────────────────────────────
 async def close_browser():
     try:
@@ -888,7 +1129,7 @@ async def close_browser():
 
 
 # ──────────────────────────────────────────────
-# 16. ENTRYPOINT
+# 17. ENTRYPOINT
 # ──────────────────────────────────────────────
 async def main():
     init_db()
@@ -908,9 +1149,10 @@ async def main():
     init_ab_table()
     if RAG_MEMORY_ENABLED:
         init_rag_memory()
-        migrate_from_sqlite_memory()  # One-time migration from SQLite
+        migrate_from_sqlite_memory()
     if CONNECTION_TRACKER_ENABLED:
-        sync_from_history()  # Sync existing history into tracker
+        sync_from_history()
+
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
@@ -923,20 +1165,20 @@ async def main():
         # await run_whatsapp_reply_task()
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
-        # await run_memory_wish_task()         # Memory-aware wishes
-        # await run_post_engagement_task()    # Like + comment on posts
-        # await run_birthday_reminder_task()  # Reminder email for tomorrow's birthdays
-        # await run_group_birthday_task()      # Group birthday detection
-        # await run_auto_reply_task()           # Auto reply to follow-up responses
-        # await run_occasion_detection_task()  # Occasion detection & congratulations
-        # await run_health_report_task()        # Weekly relationship health report
-        # await run_best_time_task()            # Analyze best time to connect
-        # await run_dm_campaign_task()          # LinkedIn DM campaign
-        # await run_categorizer_task()          # Auto-categorize contacts
-        # await run_rag_wish_task()             # RAG-based memory wishes
-        # await run_voice_to_text_reply_task()  # Voice note transcription & reply
+        # await run_memory_wish_task()
+        # await run_post_engagement_task()
+        # await run_birthday_reminder_task()
+        # await run_group_birthday_task()
+        # await run_auto_reply_task()
+        # await run_occasion_detection_task()
+        # await run_health_report_task()
+        # await run_best_time_task()
+        # await run_dm_campaign_task()
+        # await run_categorizer_task()
+        # await run_rag_wish_task()
+        # await run_voice_to_text_reply_task()
 
-        # Run ALL platforms on daily schedule:
+        # Run ALL platforms on daily schedule (uses orchestrator):
         await run_scheduler()
 
     finally:
