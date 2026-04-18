@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎂 Birthday Wishes Agent</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #0e1117;
+        --bg2: #1e2329;
+        --bg3: #2e3440;
+        --border: #2e3440;
+        --primary: #4caf50;
+        --danger: #f44336;
+        --warning: #ffc107;
+        --text: #fafafa;
+        --muted: #888;
+        --radius: 12px;
+      }
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+      input,
+      button,
+      select {
+        font-family: inherit;
+      }
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--bg3);
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useRef, useCallback } = React;
+      const API = "";
+
+      // ── AUTH ──────────────────────────────────────
+      function useAuth() {
+        const [token, setToken] = useState(localStorage.getItem("token") || "");
+        const [user, setUser] = useState(null);
+        const [loading, setLoading] = useState(false);
+
+        const login = async (username, password) => {
+          setLoading(true);
+          try {
+            const form = new URLSearchParams({ username, password });
+            const res = await fetch(`${API}/api/auth/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: form,
+            });
+            if (!res.ok) throw new Error("Invalid credentials");
+            const data = await res.json();
+            localStorage.setItem("token", data.access_token);
+            setToken(data.access_token);
+            setUser({ username: data.username, role: data.role });
+            return true;
+          } catch (e) {
+            return false;
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        const logout = () => {
+          localStorage.removeItem("token");
+          setToken("");
+          setUser(null);
+        };
+
+        useEffect(() => {
+          if (token && !user) {
+            fetch(`${API}/api/auth/me`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => {
+                if (d) setUser(d);
+                else {
+                  localStorage.removeItem("token");
+                  setToken("");
+                }
+              });
+          }
+        }, [token]);
+
+        return { token, user, login, logout, loading };
+      }
+
+      // ── API HOOK ──────────────────────────────────
+      function useApi(token) {
+        const get = useCallback(
+          async (path) => {
+            const res = await fetch(`${API}${path}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            return res.ok ? res.json() : null;
+          },
+          [token],
+        );
+
+        const post = useCallback(
+          async (path, body) => {
+            const res = await fetch(`${API}${path}`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(body),
+            });
+            return res.ok ? res.json() : null;
+          },
+          [token],
+        );
+
+        return { get, post };
+      }
+
+      // ── STYLES ────────────────────────────────────
+      const S = {
+        card: {
+          background: "var(--bg2)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius)",
+          padding: "20px",
+        },
+        btn: (variant = "primary", size = "md") => ({
+          background:
+            variant === "primary"
+              ? "var(--primary)"
+              : variant === "danger"
+                ? "var(--danger)"
+                : "var(--bg3)",
+          color: "var(--text)",
+          border: "none",
+          borderRadius: "8px",
+          padding: size === "sm" ? "6px 14px" : "10px 20px",
+          cursor: "pointer",
+          fontWeight: 600,
+          fontSize: size === "sm" ? "0.8rem" : "0.9rem",
+        }),
+        input: {
+          background: "var(--bg3)",
+          border: "1px solid var(--border)",
+          borderRadius: "8px",
+          padding: "10px 14px",
+          color: "var(--text)",
+          width: "100%",
+          fontSize: "0.9rem",
+        },
+        badge: (color) => ({
+          display: "inline-block",
+          padding: "2px 10px",
+          borderRadius: "20px",
+          fontSize: "0.75rem",
+          fontWeight: 600,
+          background:
+            color === "green"
+              ? "#1a3a2a"
+              : color === "yellow"
+                ? "#2a2a1a"
+                : color === "red"
+                  ? "#3a1a1a"
+                  : "var(--bg3)",
+          color:
+            color === "green"
+              ? "var(--primary)"
+              : color === "yellow"
+                ? "var(--warning)"
+                : color === "red"
+                  ? "var(--danger)"
+                  : "var(--muted)",
+        }),
+      };
+
+      // ── LOGIN PAGE ────────────────────────────────
+      function LoginPage({ onLogin, loading }) {
+        const [username, setUsername] = useState("admin");
+        const [password, setPassword] = useState("");
+        const [error, setError] = useState("");
+
+        const submit = async (e) => {
+          e.preventDefault();
+          setError("");
+          const ok = await onLogin(username, password);
+          if (!ok) setError("Invalid username or password.");
+        };
+
+        return (
+          <div
+            style={{
+              minHeight: "100vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{ ...S.card, width: 380, textAlign: "center" }}>
+              <div style={{ fontSize: "3rem", marginBottom: 8 }}>🎂</div>
+              <h2 style={{ marginBottom: 4 }}>Birthday Wishes Agent</h2>
+              <p
+                style={{
+                  color: "var(--muted)",
+                  marginBottom: 24,
+                  fontSize: "0.85rem",
+                }}
+              >
+                Sign in to continue
+              </p>
+              <form
+                onSubmit={submit}
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                <input
+                  style={S.input}
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoFocus
+                />
+                <input
+                  style={S.input}
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                {error && (
+                  <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>
+                    {error}
+                  </p>
+                )}
+                <button
+                  style={{ ...S.btn(), marginTop: 4 }}
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      // ── KPI CARD ──────────────────────────────────
+      function KpiCard({ label, value, emoji }) {
+        return (
+          <div style={{ ...S.card, textAlign: "center", padding: "20px 16px" }}>
+            <div
+              style={{
+                fontSize: "2rem",
+                fontWeight: 700,
+                color: "var(--primary)",
+              }}
+            >
+              {value ?? "—"}
+            </div>
+            <div
+              style={{
+                color: "var(--muted)",
+                fontSize: "0.82rem",
+                marginTop: 4,
+              }}
+            >
+              {emoji} {label}
+            </div>
+          </div>
+        );
+      }
+
+      // ── DASHBOARD TAB ─────────────────────────────
+      function DashboardTab({ token }) {
+        const { get } = useApi(token);
+        const [stats, setStats] = useState(null);
+        const [activity, setActivity] = useState([]);
+        const [logs, setLogs] = useState([]);
+        const [wsStatus, setWsStatus] = useState("connecting");
+        const logRef = useRef(null);
+        const wsRef = useRef(null);
+
+        useEffect(() => {
+          // Connect WebSocket
+          const proto = location.protocol === "https:" ? "wss:" : "ws:";
+          const ws = new WebSocket(`${proto}//${location.host}/ws/${token}`);
+          wsRef.current = ws;
+
+          ws.onopen = () => setWsStatus("connected");
+          ws.onclose = () => setWsStatus("disconnected");
+          ws.onerror = () => setWsStatus("error");
+
+          ws.onmessage = (e) => {
+            const msg = JSON.parse(e.data);
+            if (msg.type === "init") {
+              setStats(msg.stats);
+              setActivity(msg.activity || []);
+              setLogs(msg.logs || []);
+            } else if (msg.type === "stats_update") {
+              setStats(msg.stats);
+            } else if (msg.type === "activity_update") {
+              setActivity(msg.activity || []);
+            } else if (msg.type === "log") {
+              setLogs((prev) => [...prev.slice(-199), msg.message]);
+            }
+          };
+
+          // Heartbeat
+          const hb = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN)
+              ws.send(JSON.stringify({ type: "ping" }));
+          }, 30000);
+
+          return () => {
+            ws.close();
+            clearInterval(hb);
+          };
+        }, [token]);
+
+        useEffect(() => {
+          if (logRef.current)
+            logRef.current.scrollTop = logRef.current.scrollHeight;
+        }, [logs]);
+
+        const statusColor =
+          wsStatus === "connected"
+            ? "var(--primary)"
+            : wsStatus === "error"
+              ? "var(--danger)"
+              : "var(--warning)";
+
+        const logColor = (line) => {
+          if (line.includes("ERROR") || line.includes("❌")) return "#ff5252";
+          if (line.includes("WARNING") || line.includes("⚠️")) return "#ffab40";
+          if (line.includes("✅") || line.includes("🎂")) return "#69f0ae";
+          return "#82b1ff";
+        };
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Status */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: statusColor,
+                }}
+              />
+              <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
+                WebSocket: {wsStatus}
+              </span>
+            </div>
+
+            {/* KPIs */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                gap: 14,
+              }}
+            >
+              <KpiCard label="Wishes Sent" emoji="🎂" value={stats?.wishes} />
+              <KpiCard label="Replies Sent" emoji="💬" value={stats?.replies} />
+              <KpiCard label="Follow-ups" emoji="🔔" value={stats?.followups} />
+              <KpiCard label="Contacts" emoji="👥" value={stats?.contacts} />
+            </div>
+
+            {/* Two columns */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
+              {/* Live Log */}
+              <div
+                style={{
+                  ...S.card,
+                  height: 360,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <h3
+                  style={{
+                    color: "var(--primary)",
+                    marginBottom: 10,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  📋 Live Agent Log
+                </h3>
+                <div
+                  ref={logRef}
+                  style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    fontFamily: "monospace",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  {logs.map((line, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        color: logColor(line),
+                        padding: "2px 0",
+                        borderBottom: "1px solid #1a1a2a",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {line}
+                    </div>
+                  ))}
+                  {logs.length === 0 && (
+                    <p style={{ color: "var(--muted)" }}>
+                      Waiting for agent activity...
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div
+                style={{
+                  ...S.card,
+                  height: 360,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <h3
+                  style={{
+                    color: "var(--primary)",
+                    marginBottom: 10,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  🕐 Recent Activity
+                </h3>
+                <div style={{ flex: 1, overflowY: "auto" }}>
+                  {activity.map((item, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: "10px 0",
+                        borderBottom: "1px solid var(--border)",
+                        display: "flex",
+                        gap: 10,
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <span style={{ fontSize: "1.1rem" }}>
+                        {item.task?.includes("Birthday")
+                          ? "🎂"
+                          : item.task?.includes("Reply")
+                            ? "💬"
+                            : "📋"}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>
+                          {item.contact}
+                          <span
+                            style={{
+                              ...S.badge(item.dry_run ? "yellow" : "green"),
+                              marginLeft: 6,
+                            }}
+                          >
+                            {item.dry_run ? "🧪 Dry Run" : "🟢 Live"}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            color: "var(--primary)",
+                            fontSize: "0.78rem",
+                          }}
+                        >
+                          {item.task}
+                        </div>
+                        <div
+                          style={{
+                            color: "var(--muted)",
+                            fontSize: "0.75rem",
+                            marginTop: 2,
+                          }}
+                        >
+                          {item.message?.slice(0, 80)}
+                        </div>
+                        <div style={{ color: "#444", fontSize: "0.72rem" }}>
+                          {item.date}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {activity.length === 0 && (
+                    <p style={{ color: "var(--muted)" }}>No activity yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ── USERS TAB (admin only) ────────────────────
+      function UsersTab({ token }) {
+        const { get, post } = useApi(token);
+        const [users, setUsers] = useState([]);
+        const [form, setForm] = useState({
+          username: "",
+          password: "",
+          role: "user",
+        });
+        const [msg, setMsg] = useState("");
+
+        useEffect(() => {
+          get("/api/users").then((d) => {
+            if (d) setUsers(d);
+          });
+        }, []);
+
+        const createUser = async () => {
+          const res = await post("/api/users", form);
+          if (res?.status === "created") {
+            setMsg(`✅ User "${form.username}" created.`);
+            setForm({ username: "", password: "", role: "user" });
+            get("/api/users").then((d) => {
+              if (d) setUsers(d);
+            });
+          } else {
+            setMsg("❌ Failed to create user (username may exist).");
+          }
+        };
+
+        const deleteUser = async (username) => {
+          if (!confirm(`Delete user "${username}"?`)) return;
+          const res = await fetch(`${API}/api/users/${username}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            setMsg(`🗑️ User "${username}" deleted.`);
+            setUsers((prev) => prev.filter((u) => u.username !== username));
+          }
+        };
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={S.card}>
+              <h3
+                style={{
+                  color: "var(--primary)",
+                  marginBottom: 16,
+                  fontSize: "0.95rem",
+                }}
+              >
+                ➕ Add New User
+              </h3>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr auto auto",
+                  gap: 12,
+                  alignItems: "end",
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                    Username
+                  </label>
+                  <input
+                    style={{ ...S.input, marginTop: 4 }}
+                    value={form.username}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, username: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                    Password
+                  </label>
+                  <input
+                    style={{ ...S.input, marginTop: 4 }}
+                    type="password"
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, password: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                    Role
+                  </label>
+                  <select
+                    style={{ ...S.input, marginTop: 4 }}
+                    value={form.role}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, role: e.target.value }))
+                    }
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <button
+                  style={{ ...S.btn(), marginTop: 20 }}
+                  onClick={createUser}
+                >
+                  Create
+                </button>
+              </div>
+              {msg && (
+                <p
+                  style={{
+                    marginTop: 12,
+                    fontSize: "0.85rem",
+                    color: msg.includes("✅")
+                      ? "var(--primary)"
+                      : "var(--danger)",
+                  }}
+                >
+                  {msg}
+                </p>
+              )}
+            </div>
+
+            <div style={S.card}>
+              <h3
+                style={{
+                  color: "var(--primary)",
+                  marginBottom: 16,
+                  fontSize: "0.95rem",
+                }}
+              >
+                👥 All Users
+              </h3>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    {["#", "Username", "Role", "Created", "Actions"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: "8px 12px",
+                            textAlign: "left",
+                            color: "var(--muted)",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr
+                      key={u.id}
+                      style={{ borderBottom: "1px solid var(--border)" }}
+                    >
+                      <td
+                        style={{
+                          padding: "10px 12px",
+                          color: "var(--muted)",
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        {u.id}
+                      </td>
+                      <td style={{ padding: "10px 12px", fontWeight: 600 }}>
+                        {u.username}
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <span
+                          style={S.badge(
+                            u.role === "admin" ? "yellow" : "green",
+                          )}
+                        >
+                          {u.role === "admin" ? "👑 Admin" : "👤 User"}
+                        </span>
+                      </td>
+                      <td
+                        style={{
+                          padding: "10px 12px",
+                          color: "var(--muted)",
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        {u.created_at?.slice(0, 10)}
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        {u.username !== "admin" && (
+                          <button
+                            style={S.btn("danger", "sm")}
+                            onClick={() => deleteUser(u.username)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      }
+
+      // ── SETTINGS TAB ──────────────────────────────
+      function SettingsTab({ token }) {
+        const { get, post } = useApi(token);
+        const [settings, setSettings] = useState({});
+        const [msg, setMsg] = useState("");
+
+        const SETTING_FIELDS = [
+          {
+            key: "dry_run",
+            label: "Dry Run Mode",
+            type: "select",
+            options: ["true", "false"],
+          },
+          { key: "schedule_hour", label: "Schedule Hour", type: "number" },
+          { key: "cooldown_days", label: "Cooldown Days", type: "number" },
+          {
+            key: "enable_linkedin",
+            label: "Enable LinkedIn",
+            type: "select",
+            options: ["true", "false"],
+          },
+          {
+            key: "enable_whatsapp",
+            label: "Enable WhatsApp",
+            type: "select",
+            options: ["true", "false"],
+          },
+          {
+            key: "enable_facebook",
+            label: "Enable Facebook",
+            type: "select",
+            options: ["true", "false"],
+          },
+          {
+            key: "enable_instagram",
+            label: "Enable Instagram",
+            type: "select",
+            options: ["true", "false"],
+          },
+          {
+            key: "voice_enabled",
+            label: "Voice Messages",
+            type: "select",
+            options: ["true", "false"],
+          },
+          {
+            key: "voice_engine",
+            label: "Voice Engine",
+            type: "select",
+            options: ["gtts", "elevenlabs"],
+          },
+          {
+            key: "campaign_type",
+            label: "DM Campaign Type",
+            type: "select",
+            options: [
+              "welcome",
+              "icebreaker",
+              "reconnect",
+              "value_share",
+              "coffee_chat",
+            ],
+          },
+        ];
+
+        useEffect(() => {
+          get("/api/settings").then((d) => {
+            if (d) setSettings(d);
+          });
+        }, []);
+
+        const save = async (key, value) => {
+          const res = await post("/api/settings", { key, value });
+          if (res?.status === "saved") {
+            setSettings((prev) => ({ ...prev, [key]: value }));
+            setMsg(`✅ Saved "${key}"`);
+            setTimeout(() => setMsg(""), 2000);
+          }
+        };
+
+        return (
+          <div style={S.card}>
+            <h3
+              style={{
+                color: "var(--primary)",
+                marginBottom: 20,
+                fontSize: "0.95rem",
+              }}
+            >
+              ⚙️ User Settings
+            </h3>
+            {msg && (
+              <p
+                style={{
+                  marginBottom: 12,
+                  color: "var(--primary)",
+                  fontSize: "0.85rem",
+                }}
+              >
+                {msg}
+              </p>
+            )}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
+              {SETTING_FIELDS.map((f) => (
+                <div key={f.key}>
+                  <label
+                    style={{
+                      fontSize: "0.82rem",
+                      color: "var(--muted)",
+                      display: "block",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {f.label}
+                  </label>
+                  {f.type === "select" ? (
+                    <select
+                      style={S.input}
+                      value={settings[f.key] || f.options[0]}
+                      onChange={(e) => save(f.key, e.target.value)}
+                    >
+                      {f.options.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      style={S.input}
+                      type="number"
+                      value={settings[f.key] || ""}
+                      onChange={(e) => save(f.key, e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      // ── MAIN APP ──────────────────────────────────
+      function App() {
+        const { token, user, login, logout, loading } = useAuth();
+        const [activeTab, setActiveTab] = useState("dashboard");
+
+        if (!token || !user) {
+          return <LoginPage onLogin={login} loading={loading} />;
+        }
+
+        const tabs = [
+          { id: "dashboard", label: "📊 Dashboard" },
+          { id: "settings", label: "⚙️ Settings" },
+          ...(user.role === "admin"
+            ? [{ id: "users", label: "👥 Users" }]
+            : []),
+        ];
+
+        return (
+          <div
+            style={{
+              minHeight: "100vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* HEADER */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, #1a237e, var(--primary))",
+                padding: "0 24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                height: 56,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                <h1 style={{ fontSize: "1rem", fontWeight: 700 }}>
+                  🎂 Birthday Agent
+                </h1>
+                <nav style={{ display: "flex", gap: 4 }}>
+                  {tabs.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTab(t.id)}
+                      style={{
+                        background:
+                          activeTab === t.id
+                            ? "rgba(255,255,255,0.2)"
+                            : "transparent",
+                        border: "none",
+                        color: "white",
+                        padding: "6px 14px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        fontWeight: activeTab === t.id ? 700 : 400,
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span
+                  style={{
+                    fontSize: "0.82rem",
+                    color: "rgba(255,255,255,0.7)",
+                  }}
+                >
+                  👤 {user.username}
+                  {user.role === "admin" && (
+                    <span style={{ ...S.badge("yellow"), marginLeft: 6 }}>
+                      Admin
+                    </span>
+                  )}
+                </span>
+                <button
+                  style={{
+                    ...S.btn("default", "sm"),
+                    background: "rgba(255,255,255,0.15)",
+                  }}
+                  onClick={logout}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+
+            {/* CONTENT */}
+            <div
+              style={{
+                flex: 1,
+                padding: 24,
+                maxWidth: 1400,
+                margin: "0 auto",
+                width: "100%",
+              }}
+            >
+              {activeTab === "dashboard" && <DashboardTab token={token} />}
+              {activeTab === "settings" && <SettingsTab token={token} />}
+              {activeTab === "users" && user.role === "admin" && (
+                <UsersTab token={token} />
+              )}
+            </div>
+
+            {/* FOOTER */}
+            <div
+              style={{
+                textAlign: "center",
+                color: "#333",
+                fontSize: "0.78rem",
+                padding: "12px",
+              }}
+            >
+              🎂 Birthday Wishes Agent v5.0 — Full Web App
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
