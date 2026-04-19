@@ -1,0 +1,261 @@
+/* Birthday Wishes Agent — Sidebar CSS */
+
+#bwa-sidebar-panel {
+   position: fixed;
+   top: 72px;
+   right: 0;
+   width: 300px;
+   max-height: calc(100vh - 80px);
+   background: #1E2329;
+   border: 1px solid #2E3440;
+   border-right: none;
+   border-radius: 12px 0 0 12px;
+   z-index: 9999;
+   display: flex;
+   flex-direction: column;
+   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+   font-family: 'Segoe UI', sans-serif;
+   font-size: 13px;
+   color: #FAFAFA;
+   overflow: hidden;
+}
+
+/* HEADER */
+.bwa-header {
+   background: linear-gradient(135deg, #1a237e, #4CAF50);
+   padding: 12px 14px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   flex-shrink: 0;
+}
+
+.bwa-header-left {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+}
+
+.bwa-logo {
+   font-size: 1.2rem;
+}
+
+.bwa-title {
+   font-weight: 700;
+   font-size: 0.9rem;
+}
+
+.bwa-close {
+   background: rgba(255, 255, 255, 0.15);
+   border: none;
+   color: white;
+   cursor: pointer;
+   width: 24px;
+   height: 24px;
+   border-radius: 6px;
+   font-size: 0.75rem;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+
+.bwa-close:hover {
+   background: rgba(255, 255, 255, 0.3);
+}
+
+/* BODY */
+.bwa-body {
+   flex: 1;
+   overflow-y: auto;
+   padding: 12px;
+   display: flex;
+   flex-direction: column;
+   gap: 12px;
+}
+
+.bwa-body::-webkit-scrollbar {
+   width: 4px;
+}
+
+.bwa-body::-webkit-scrollbar-thumb {
+   background: #2E3440;
+   border-radius: 4px;
+}
+
+/* SECTIONS */
+.bwa-section {
+   background: #0E1117;
+   border: 1px solid #2E3440;
+   border-radius: 8px;
+   padding: 12px;
+}
+
+.bwa-section-title {
+   font-size: 0.78rem;
+   font-weight: 700;
+   color: #4CAF50;
+   margin-bottom: 8px;
+   text-transform: uppercase;
+   letter-spacing: 0.5px;
+}
+
+/* CONTACT INFO */
+.bwa-contact-name {
+   font-weight: 700;
+   font-size: 0.95rem;
+}
+
+.bwa-contact-job {
+   color: #aaa;
+   font-size: 0.8rem;
+   margin-top: 2px;
+}
+
+.bwa-contact-company {
+   color: #4CAF50;
+   font-size: 0.78rem;
+   margin-top: 1px;
+}
+
+/* HEALTH */
+.bwa-health-row {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   margin-bottom: 4px;
+}
+
+.bwa-health-bar-wrap {
+   flex: 1;
+   height: 6px;
+   background: #2E3440;
+   border-radius: 3px;
+   overflow: hidden;
+}
+
+.bwa-health-bar {
+   height: 100%;
+   background: #4CAF50;
+   border-radius: 3px;
+   transition: width 0.5s ease;
+}
+
+.bwa-health-score {
+   font-size: 0.78rem;
+   color: #4CAF50;
+   font-weight: 600;
+}
+
+.bwa-health-level {
+   font-size: 0.75rem;
+   color: #888;
+}
+
+/* MEMORY */
+.bwa-memory-box {
+   display: flex;
+   flex-direction: column;
+   gap: 4px;
+   font-size: 0.8rem;
+   color: #ccc;
+}
+
+/* HISTORY */
+.bwa-history-item {
+   display: flex;
+   gap: 8px;
+   align-items: flex-start;
+   padding: 5px 0;
+   border-bottom: 1px solid #1a1a2e;
+}
+
+.bwa-hist-icon {
+   font-size: 1rem;
+   flex-shrink: 0;
+}
+
+.bwa-hist-task {
+   font-size: 0.78rem;
+   color: #4CAF50;
+}
+
+.bwa-hist-date {
+   font-size: 0.72rem;
+   color: #555;
+}
+
+/* NOTES */
+.bwa-note-item {
+   padding: 6px 0;
+   border-bottom: 1px solid #1a1a2e;
+   font-size: 0.8rem;
+   color: #ccc;
+}
+
+.bwa-note-text {
+   margin-bottom: 3px;
+}
+
+.bwa-tag {
+   display: inline-block;
+   background: #1a3a2a;
+   color: #4CAF50;
+   font-size: 0.68rem;
+   padding: 1px 6px;
+   border-radius: 8px;
+   margin-right: 3px;
+}
+
+/* ADD NOTE */
+.bwa-add-note {
+   margin-top: 8px;
+   display: flex;
+   flex-direction: column;
+   gap: 6px;
+}
+
+.bwa-add-note textarea,
+.bwa-add-note input {
+   background: #1E2329;
+   border: 1px solid #2E3440;
+   border-radius: 6px;
+   padding: 7px 10px;
+   color: #FAFAFA;
+   font-size: 0.78rem;
+   font-family: inherit;
+   resize: none;
+   width: 100%;
+}
+
+.bwa-add-note textarea:focus,
+.bwa-add-note input:focus {
+   outline: none;
+   border-color: #4CAF50;
+}
+
+.bwa-btn {
+   background: #4CAF50;
+   border: none;
+   color: white;
+   border-radius: 6px;
+   padding: 7px 0;
+   cursor: pointer;
+   font-size: 0.8rem;
+   font-weight: 600;
+   width: 100%;
+}
+
+.bwa-btn:hover {
+   background: #43A047;
+}
+
+.bwa-note-msg {
+   font-size: 0.78rem;
+   text-align: center;
+   min-height: 16px;
+}
+
+.bwa-empty {
+   color: #555;
+   font-size: 0.78rem;
+}

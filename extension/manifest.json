@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Birthday Wishes Agent",
+  "version": "1.0.0",
+  "description": "Shows contact info, notes, and wish history when browsing LinkedIn profiles.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://www.linkedin.com/*", "http://localhost:8000/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Birthday Wishes Agent"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

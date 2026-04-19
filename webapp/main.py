@@ -481,3 +481,105 @@ async def serve_frontend(full_path: str):
     if index.exists():
         return HTMLResponse(content=index.read_text(encoding="utf-8"))
     return HTMLResponse(content="<h1>Frontend not found. Place index.html in webapp/frontend/</h1>")
+
+
+# ──────────────────────────────────────────────
+# CONTACT ROUTES (for Browser Extension)
+# ──────────────────────────────────────────────
+import sqlite3 as _sq
+import json as _json
+
+@app.get("/api/contact/notes")
+async def contact_notes(
+    name: str,
+    user: dict = Depends(get_current_user),
+):
+    """Get notes for a specific contact."""
+    if not DB_FILE.exists():
+        return []
+    try:
+        conn = _sq.connect(DB_FILE)
+        rows = conn.execute(
+            "SELECT id, note, tags, created_at FROM contact_notes "
+            "WHERE LOWER(contact) LIKE LOWER(?) ORDER BY created_at DESC LIMIT 10",
+            (f"%{name.split()[0]}%",),
+        ).fetchall()
+        conn.close()
+        return [
+            {"id": r[0], "note": r[1],
+             "tags": r[2].split(",") if r[2] else [],
+             "created_at": r[3]}
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
+@app.post("/api/contact/notes")
+async def add_contact_note(
+    body: dict,
+    user: dict = Depends(get_current_user),
+):
+    """Add a note for a contact."""
+    contact  = body.get("contact", "")
+    note     = body.get("note", "")
+    tags     = body.get("tags", [])
+    if not contact or not note:
+        raise HTTPException(status_code=400, detail="contact and note required")
+    try:
+        from datetime import datetime as _dt
+        now = _dt.now().isoformat()
+        conn = _sq.connect(DB_FILE)
+        conn.execute(
+            "INSERT INTO contact_notes (contact, note, tags, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (contact, note, ", ".join(tags), now, now),
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "saved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/contact/health")
+async def contact_health(
+    name: str,
+    user: dict = Depends(get_current_user),
+):
+    """Get relationship health score for a contact."""
+    try:
+        from relationship_health import calculate_health_score
+        return calculate_health_score(name)
+    except Exception:
+        return {"health_score": 0, "health_level": {"name": "Unknown"}}
+
+
+@app.get("/api/contact/memory")
+async def contact_memory(
+    name: str,
+    user: dict = Depends(get_current_user),
+):
+    """Get memory for a contact."""
+    if not DB_FILE.exists():
+        return None
+    try:
+        conn = _sq.connect(DB_FILE)
+        row  = conn.execute(
+            "SELECT job_title, company, life_event, interests, last_wish "
+            "FROM contact_memory WHERE LOWER(contact) LIKE LOWER(?) "
+            "ORDER BY year DESC LIMIT 1",
+            (f"%{name.split()[0]}%",),
+        ).fetchone()
+        conn.close()
+        if not row:
+            return None
+        return {
+            "job_title":  row[0] or "",
+            "company":    row[1] or "",
+            "life_event": row[2] or "",
+            "interests":  _json.loads(row[3]) if row[3] else [],
+            "last_wish":  row[4] or "",
+        }
+    except Exception:
+        return None
