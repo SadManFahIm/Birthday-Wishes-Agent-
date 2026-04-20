@@ -57,7 +57,7 @@ from rag_memory import (init_rag_memory, save_memory_to_rag,
                          migrate_from_sqlite_memory)
 from voice_to_text import run_voice_reply_task as run_voice_to_text_task
 from voice import generate_voice
-
+from email_digest import send_weekly_digest
 
 # ──────────────────────────────────────────────
 # 1. LOGGING SETUP
@@ -72,8 +72,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
+# ── EMAIL DIGEST ──────────────────────────────
+EMAIL_DIGEST_ENABLED = True
+DIGEST_DAY           = "monday"
 # ──────────────────────────────────────────────
+
 # 2. CONFIG & CREDENTIALS
 # ──────────────────────────────────────────────
 config = dotenv_values(".env")
@@ -217,7 +220,11 @@ def filter_notice(task: str) -> str:
   ✅ WHITELIST — only process: {whitelist_str}
   ❄️  COOLDOWN  — skip (contacted in last {COOLDOWN_DAYS} days): {cooldown_str}
 """
-
+async def run_email_digest_task():
+    """Send weekly digest email."""
+    logger.info("=== Weekly Email Digest === [DRY RUN: %s]", DRY_RUN)
+    data = await send_weekly_digest(dry_run=DRY_RUN)
+    return data
 
 # ──────────────────────────────────────────────
 # 5. SESSION MANAGEMENT
@@ -241,7 +248,10 @@ def session_is_valid() -> bool:
         logger.warning("⚠️  Session read error: %s", e)
         return False
 
-
+if EMAIL_DIGEST_ENABLED:
+    if date.today().strftime("%A").lower() == DIGEST_DAY.lower():
+        await run_email_digest_task()
+        
 def save_session_timestamp():
     existing = {}
     if SESSION_FILE.exists():
