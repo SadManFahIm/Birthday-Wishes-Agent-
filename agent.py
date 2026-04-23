@@ -58,6 +58,13 @@ from rag_memory import (init_rag_memory, save_memory_to_rag,
 from voice_to_text import run_voice_reply_task as run_voice_to_text_task
 from voice import generate_voice
 from email_digest import send_weekly_digest
+from personality_profiling import (
+    init_personality_table,
+    run_personality_profiling,
+    generate_personality_aware_wish,
+    get_personality_profile,
+    get_personality_stats,
+)
 
 # ──────────────────────────────────────────────
 # 1. LOGGING SETUP
@@ -112,23 +119,25 @@ AUTO_CONNECT_ENABLED = True
 MAX_CONNECTS_PER_DAY = 10
 
 # ── FEATURE FLAGS ─────────────────────────────
-MEMORY_ENABLED             = True
-POST_ENGAGEMENT_ENABLED    = True
-BIRTHDAY_REMINDER_ENABLED  = True
-GROUP_BIRTHDAY_ENABLED     = True
+MEMORY_ENABLED              = True
+POST_ENGAGEMENT_ENABLED     = True
+BIRTHDAY_REMINDER_ENABLED   = True
+GROUP_BIRTHDAY_ENABLED      = True
 AUTO_REPLY_FOLLOWUP_ENABLED = True
-OCCASION_DETECTION_ENABLED = True
-DM_CAMPAIGN_ENABLED        = False
+OCCASION_DETECTION_ENABLED  = True
+DM_CAMPAIGN_ENABLED         = False
 CONTACT_CATEGORIZER_ENABLED = True
-HEALTH_REPORT_ENABLED      = True
-RAG_MEMORY_ENABLED         = False
-CONNECTION_TRACKER_ENABLED = True
+HEALTH_REPORT_ENABLED       = True
+RAG_MEMORY_ENABLED          = False
+CONNECTION_TRACKER_ENABLED  = True
+
+# ── PERSONALITY PROFILING ─────────────────────
+PERSONALITY_PROFILING_ENABLED    = True
+MAX_PERSONALITY_PROFILES_PER_DAY = 10
 
 # ── MULTI-AGENT ORCHESTRATOR SETTINGS ─────────
-# True  → সব sub-agents parallel এ চলবে (faster)
-# False → sequential চলবে (debug / rate-limit এ ব্যবহার করো)
-PARALLEL_MODE            = True
-MAX_BROWSER_CONCURRENCY  = 3   # একসাথে সর্বোচ্চ কতটা browser task চলবে
+PARALLEL_MODE           = True
+MAX_BROWSER_CONCURRENCY = 3
 
 # ── MISC SETTINGS ─────────────────────────────
 TRANSCRIPTION_ENGINE       = "whisper"
@@ -220,11 +229,7 @@ def filter_notice(task: str) -> str:
   ✅ WHITELIST — only process: {whitelist_str}
   ❄️  COOLDOWN  — skip (contacted in last {COOLDOWN_DAYS} days): {cooldown_str}
 """
-async def run_email_digest_task():
-    """Send weekly digest email."""
-    logger.info("=== Weekly Email Digest === [DRY RUN: %s]", DRY_RUN)
-    data = await send_weekly_digest(dry_run=DRY_RUN)
-    return data
+
 
 # ──────────────────────────────────────────────
 # 5. SESSION MANAGEMENT
@@ -248,10 +253,7 @@ def session_is_valid() -> bool:
         logger.warning("⚠️  Session read error: %s", e)
         return False
 
-if EMAIL_DIGEST_ENABLED:
-    if date.today().strftime("%A").lower() == DIGEST_DAY.lower():
-        await run_email_digest_task()
-        
+
 def save_session_timestamp():
     existing = {}
     if SESSION_FILE.exists():
@@ -841,8 +843,78 @@ async def run_post_engagement_task():
     return result
 
 
+async def run_email_digest_task():
+    """Send weekly digest email."""
+    logger.info("=== Weekly Email Digest === [DRY RUN: %s]", DRY_RUN)
+    data = await send_weekly_digest(dry_run=DRY_RUN)
+    return data
+
+
+# ──────────────────────────────────────────────
+# PERSONALITY PROFILING TASK
+# ──────────────────────────────────────────────
+async def run_personality_profiling_task(contacts: list[dict] = None):
+    """
+    Birthday contacts-দের LinkedIn posts analyze করে personality type detect করে।
+    তারপর সেই personality অনুযায়ী personalized birthday wish generate করে।
+
+    contacts format:
+        [{"name": "Rahul Ahmed", "profile_url": "https://linkedin.com/in/rahul-ahmed"}]
+
+    Personality profile SQLite-এ save হয়, পরের বছরও reuse হবে।
+    """
+    logger.info(
+        "=== Personality Profiling === [DRY RUN: %s | MAX: %d]",
+        DRY_RUN, MAX_PERSONALITY_PROFILES_PER_DAY,
+    )
+
+    if not contacts:
+        logger.warning(
+            "⚠️  No contacts provided for personality profiling. "
+            "Pass birthday contacts from detection result."
+        )
+        return []
+
+    results = await run_personality_profiling(
+        contacts          = contacts,
+        llm               = llm,
+        browser           = browser,
+        already_logged_in = session_is_valid(),
+        username          = USERNAME,
+        password          = PASSWORD,
+        dry_run           = DRY_RUN,
+        max_profiles      = MAX_PERSONALITY_PROFILES_PER_DAY,
+    )
+
+    for r in results:
+        logger.info(
+            "🧠 %s → MBTI: %s | Tone: %s | Wish: %s",
+            r["contact"],
+            r["mbti_type"],
+            r["tone"],
+            r["wish"][:60] + "..." if len(r["wish"]) > 60 else r["wish"],
+        )
+
+    stats = get_personality_stats()
+    logger.info(
+        "📊 Personality DB: %d profiles | Top MBTI: %s | Avg confidence: %.2f",
+        stats["total"],
+        max(stats["by_mbti"], key=stats["by_mbti"].get) if stats["by_mbti"] else "N/A",
+        stats["avg_confidence"],
+    )
+
+    send_summary(
+        "Personality Profiling",
+        [r["contact"] for r in results],
+        0,
+        DRY_RUN,
+    )
+    save_session_timestamp()
+    return results
+
+
 # ══════════════════════════════════════════════════════════════
-# 14. MULTI-AGENT ORCHESTRATOR  (Feature 4)
+# 14. MULTI-AGENT ORCHESTRATOR
 # ══════════════════════════════════════════════════════════════
 
 class AgentStatus(Enum):
@@ -899,13 +971,13 @@ class OrchestratorAgent:
     └─────────────────────────────────────────────────┘
 
     asyncio.Semaphore দিয়ে browser concurrency control করা হয়।
-    এতে সব task একসাথে শুরু হয়, কিন্তু একসাথে সর্বোচ্চ
-    MAX_BROWSER_CONCURRENCY টা browser ব্যবহার করে।
     """
 
     def __init__(self, max_browser_concurrency: int = MAX_BROWSER_CONCURRENCY):
         self._browser_sem = asyncio.Semaphore(max_browser_concurrency)
         self.results: list[SubAgentResult] = []
+        # birthday detection result share করার জন্য
+        self._birthday_contacts: list[dict] = []
 
     async def _run_sub_agent(
         self,
@@ -1011,33 +1083,61 @@ class OrchestratorAgent:
             tasks.append(("RAG-Wishes",
                            lambda: run_rag_wish_task()))
 
+        # Personality Profiling — birthday detection-এর পরে চলে
+        # Sequential mode-এ birthday contacts automatically pass হয়।
+        # Parallel mode-এ _birthday_contacts list populate হলে চলবে।
+        if PERSONALITY_PROFILING_ENABLED:
+            tasks.append(("Personality-Profiling",
+                           lambda: run_personality_profiling_task(
+                               self._birthday_contacts or []
+                           )))
+
         return tasks
 
     async def run_parallel(self) -> list[SubAgentResult]:
         """
         সব sub-agents কে parallel এ run করে।
-        asyncio.gather() দিয়ে সব coroutine একসাথে শুরু হয়।
-        Semaphore browser concurrency limit enforce করে।
+        Personality Profiling birthday detection complete হওয়ার পরে চলে।
         """
         wall_start = time.monotonic()
-        task_list  = self._build_task_list()
-
-        if not task_list:
-            logger.warning("⚠️ [Orchestrator] No sub-agents enabled.")
-            return []
 
         logger.info("=" * 60)
-        logger.info("🎯 [Orchestrator] Parallel run — %d sub-agents", len(task_list))
-        logger.info("   Browser concurrency limit: %d", self._browser_sem._value)
-        logger.info("   DRY_RUN: %s", DRY_RUN)
-        for name, _ in task_list:
+        logger.info("🎯 [Orchestrator] Parallel run — DRY_RUN: %s", DRY_RUN)
+        logger.info("   Browser concurrency limit: %d", MAX_BROWSER_CONCURRENCY)
+        logger.info("=" * 60)
+
+        # ── Step 1: Birthday detection আগে চালাই (personality profiling এর জন্য দরকার)
+        if ENABLE_LINKEDIN and PERSONALITY_PROFILING_ENABLED:
+            logger.info("🤖 Running Birthday Detection first (feeds Personality Profiling)...")
+            try:
+                bd_result = await run_birthday_detection_task()
+                # Result থেকে contacts extract করার চেষ্টা
+                # (actual parsing depends on agent output format)
+                if isinstance(bd_result, list):
+                    self._birthday_contacts = bd_result
+                else:
+                    # Fallback: empty list, personality profiling gracefully skips
+                    self._birthday_contacts = []
+            except Exception as e:
+                logger.error("❌ Birthday detection failed: %s", e)
+                self._birthday_contacts = []
+
+            # বাকি tasks থেকে birthday detection সরিয়ে দিই (already ran)
+            remaining_tasks = [
+                (name, factory)
+                for name, factory in self._build_task_list()
+                if name != "LinkedIn-BirthdayDetection"
+            ]
+        else:
+            remaining_tasks = self._build_task_list()
+
+        logger.info("🚀 Launching %d remaining sub-agents in parallel...", len(remaining_tasks))
+        for name, _ in remaining_tasks:
             logger.info("   • %s", name)
-        logger.info("=" * 60)
 
-        # Launch ALL at once — semaphore controls actual browser concurrency
         coros = [
             self._run_sub_agent(name, factory)
-            for name, factory in task_list
+            for name, factory in remaining_tasks
         ]
         self.results = await asyncio.gather(*coros, return_exceptions=False)
 
@@ -1049,9 +1149,29 @@ class OrchestratorAgent:
         """Sequential fallback — debug বা rate-limit issue হলে ব্যবহার করো।"""
         logger.info("🔄 [Orchestrator] Sequential mode (fallback)")
         results = []
+        birthday_contacts = []
+
         for name, factory in self._build_task_list():
-            r = await self._run_sub_agent(name, factory)
-            results.append(r)
+            # Birthday detection result capture করি
+            if name == "LinkedIn-BirthdayDetection":
+                r = await self._run_sub_agent(name, factory)
+                if r.status == AgentStatus.SUCCESS and isinstance(r.result, list):
+                    birthday_contacts = r.result
+                    self._birthday_contacts = birthday_contacts
+                results.append(r)
+
+            # Personality profiling-এ captured contacts pass করি
+            elif name == "Personality-Profiling":
+                r = await self._run_sub_agent(
+                    name,
+                    lambda: run_personality_profiling_task(birthday_contacts),
+                )
+                results.append(r)
+
+            else:
+                r = await self._run_sub_agent(name, factory)
+                results.append(r)
+
         self.results = results
         self._print_summary(0)
         return results
@@ -1093,13 +1213,11 @@ async def daily_job():
     )
 
     if PARALLEL_MODE:
-        # ── Feature 4: Parallel Multi-Agent ──────────────────────
         await orchestrator.run_parallel()
     else:
-        # ── Sequential fallback ───────────────────────────────────
         await orchestrator.run_sequential()
 
-    # Weekly tasks — দিন দেখে চালাতে হয়, তাই orchestrator এর বাইরে রাখা হলো
+    # Weekly tasks
     try:
         if CONTACT_CATEGORIZER_ENABLED:
             if date.today().strftime("%A") == "Sunday":
@@ -1108,6 +1226,11 @@ async def daily_job():
         if HEALTH_REPORT_ENABLED:
             if date.today().strftime("%A").lower() == HEALTH_REPORT_DAY.lower():
                 await run_health_report_task()
+
+        if EMAIL_DIGEST_ENABLED:
+            if date.today().strftime("%A").lower() == DIGEST_DAY.lower():
+                await run_email_digest_task()
+
     except Exception as e:
         logger.error("❌ Weekly task error: %s", e)
 
@@ -1157,6 +1280,8 @@ async def main():
     init_campaign_table()
     init_categorizer_table()
     init_ab_table()
+    init_personality_table()          # ← Personality Profiling DB init
+
     if RAG_MEMORY_ENABLED:
         init_rag_memory()
         migrate_from_sqlite_memory()
@@ -1187,6 +1312,7 @@ async def main():
         # await run_categorizer_task()
         # await run_rag_wish_task()
         # await run_voice_to_text_reply_task()
+        # await run_personality_profiling_task()   # ← Personality Profiling (standalone)
 
         # Run ALL platforms on daily schedule (uses orchestrator):
         await run_scheduler()
