@@ -57,6 +57,13 @@ from voice import generate_voice
 from personality_profiling import (init_personality_table, analyze_personality,
                                    get_personality_profile,
                                    build_personality_instructions)
+from predictive_birthday import (
+    init_predicted_birthday_table,
+    run_predictive_birthday,
+    send_todays_predicted_wishes,
+    get_prediction_stats,
+    get_todays_predicted_birthdays,
+)
 
 # ──────────────────────────────────────────────
 # 1. LOGGING SETUP
@@ -106,6 +113,14 @@ SENTIMENT_ANALYSIS_ENABLED = True
 # ── AUTO-CONNECT ──────────────────────────────
 AUTO_CONNECT_ENABLED = True
 MAX_CONNECTS_PER_DAY = 10
+
+# ── PERSONALITY PROFILING ─────────────────────
+PERSONALITY_PROFILING_ENABLED = True
+
+# ── PREDICTIVE BIRTHDAY ───────────────────────
+PREDICTIVE_BIRTHDAY_ENABLED = True
+MAX_BIRTHDAY_PREDICTIONS    = 20
+PREDICTION_MIN_CONFIDENCE   = 'medium'
 
 if not USERNAME or not PASSWORD:
     raise EnvironmentError("❌ USERNAME or PASSWORD missing in .env")
@@ -860,6 +875,22 @@ async def run_personality_profiling_task(contacts: list[dict] = None):
     return results
 
 
+async def run_predictive_birthday_task(contacts: list[dict] = None):
+    logger.info('=== Predictive Birthday === [DRY RUN: %s | MAX: %d | MIN_CONF: %s]', DRY_RUN, MAX_BIRTHDAY_PREDICTIONS, PREDICTION_MIN_CONFIDENCE)
+    if contacts:
+        results = await run_predictive_birthday(contacts=contacts, llm=llm, browser=browser, already_logged_in=session_is_valid(), username=USERNAME, password=PASSWORD, dry_run=DRY_RUN, max_predictions=MAX_BIRTHDAY_PREDICTIONS, min_confidence=PREDICTION_MIN_CONFIDENCE)
+        today_count = sum(1 for r in results if r.get('is_birthday_today'))
+        logger.info('🔮 Predicted %d contacts | %d birthday today', len(results), today_count)
+    else:
+        logger.info('📭 No new contacts to predict. Checking saved predictions...')
+    wished = await send_todays_predicted_wishes(llm=llm, browser=browser, already_logged_in=session_is_valid(), username=USERNAME, password=PASSWORD, dry_run=DRY_RUN)
+    stats = get_prediction_stats()
+    logger.info('📊 Prediction DB: %d total | High: %d | Medium: %d | Low: %d | Wished: %d', stats['total'], stats['by_confidence'].get('high', 0), stats['by_confidence'].get('medium', 0), stats['by_confidence'].get('low', 0), stats['wished'])
+    send_summary('Predictive Birthday', wished, 0, DRY_RUN)
+    save_session_timestamp()
+    return wished
+
+
 async def daily_job():
     logger.info("⏰ Daily job started.")
     try:
@@ -976,6 +1007,7 @@ async def main():
     init_categorizer_table()
     init_ab_table()
     init_personality_table()
+    init_predicted_birthday_table()
     if RAG_MEMORY_ENABLED:
         init_rag_memory()
         migrate_from_sqlite_memory()
@@ -1009,6 +1041,7 @@ async def main():
         # await run_rag_wish_task()             # RAG-based memory wishes
         # await run_voice_to_text_reply_task()  # Voice note transcription & reply
         # await run_personality_profiling_task()  # Profile contacts from LinkedIn posts
+        # await run_predictive_birthday_task()   # ← Predictive Birthday (standalone)
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
