@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  agent:
+    build: .
+    container_name: birthday-agent
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persist database, logs, session, browser profile
+      - ./agent_history.db:/app/agent_history.db
+      - ./agent.log:/app/agent.log
+      - ./linkedin_session.json:/app/linkedin_session.json
+      - ./browser_profile:/app/browser_profile
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DISPLAY=:99
+    command: python agent.py
+
+  dashboard:
+    build: .
+    container_name: birthday-dashboard
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./agent_history.db:/app/agent_history.db
+      - ./agent.log:/app/agent.log
+    ports:
+      - "8501:8501"
+    command: streamlit run dashboard.py --server.port=8501 --server.address=0.0.0.0
+    depends_on:
+      - agent
