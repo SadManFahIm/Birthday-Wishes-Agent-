@@ -892,17 +892,45 @@ async def run_personality_profiling_task(contacts: list[dict] = None):
 
 
 async def run_predictive_birthday_task(contacts: list[dict] = None):
-    logger.info('=== Predictive Birthday === [DRY RUN: %s | MAX: %d | MIN_CONF: %s]', DRY_RUN, MAX_BIRTHDAY_PREDICTIONS, PREDICTION_MIN_CONFIDENCE)
+    """Predict upcoming birthdays and send wishes for today's predictions."""
+    logger.info(
+        "=== Predictive Birthday === [DRY RUN: %s | MAX: %d | MIN_CONF: %s]",
+        DRY_RUN, MAX_BIRTHDAY_PREDICTIONS, PREDICTION_MIN_CONFIDENCE,
+    )
     if contacts:
-        results = await run_predictive_birthday(contacts=contacts, llm=llm, browser=browser, already_logged_in=session_is_valid(), username=USERNAME, password=PASSWORD, dry_run=DRY_RUN, max_predi[...]
-        today_count = sum(1 for r in results if r.get('is_birthday_today'))
-        logger.info('🔮 Predicted %d contacts | %d birthday today', len(results), today_count)
+        results = await run_predictive_birthday(
+            contacts=contacts,
+            llm=llm,
+            browser=browser,
+            already_logged_in=session_is_valid(),
+            username=USERNAME,
+            password=PASSWORD,
+            dry_run=DRY_RUN,
+            max_predictions=MAX_BIRTHDAY_PREDICTIONS,
+            min_confidence=PREDICTION_MIN_CONFIDENCE,
+        )
+        today_count = sum(1 for r in results if r.get("is_birthday_today"))
+        logger.info("🔮 Predicted %d contacts | %d birthday today", len(results), today_count)
     else:
-        logger.info('📭 No new contacts to predict. Checking saved predictions...')
-    wished = await send_todays_predicted_wishes(llm=llm, browser=browser, already_logged_in=session_is_valid(), username=USERNAME, password=PASSWORD, dry_run=DRY_RUN)
+        logger.info("📭 No new contacts to predict. Checking saved predictions...")
+    wished = await send_todays_predicted_wishes(
+        llm=llm,
+        browser=browser,
+        already_logged_in=session_is_valid(),
+        username=USERNAME,
+        password=PASSWORD,
+        dry_run=DRY_RUN,
+    )
     stats = get_prediction_stats()
-    logger.info('📊 Prediction DB: %d total | High: %d | Medium: %d | Low: %d | Wished: %d', stats['total'], stats['by_confidence'].get('high', 0), stats['by_confidence'].get('medium', 0), stat[...]
-    send_summary('Predictive Birthday', wished, 0, DRY_RUN)
+    logger.info(
+        "📊 Prediction DB: %d total | High: %d | Medium: %d | Low: %d | Wished: %d",
+        stats["total"],
+        stats["by_confidence"].get("high", 0),
+        stats["by_confidence"].get("medium", 0),
+        stats["by_confidence"].get("low", 0),
+        stats.get("wished", 0),
+    )
+    send_summary("Predictive Birthday", wished, 0, DRY_RUN)
     save_session_timestamp()
     return wished
 
@@ -913,7 +941,13 @@ async def run_eq_scoring_task(reply_text: str = "", contact: str = "", context: 
         logger.info("No reply text provided for EQ scoring.")
         return None
     result = await score_reply(reply_text=reply_text, context=context, llm=llm)
-    save_eq_score(contact=contact, reply_text=reply_text, eq_score=result.get("eq_score", 0), breakdown=result.get("breakdown", {}), tips=result.get("improvement_tips", []))
+    save_eq_score(
+        contact=contact,
+        reply_text=reply_text,
+        eq_score=result.get("eq_score", 0),
+        breakdown=result.get("breakdown", {}),
+        tips=result.get("improvement_tips", []),
+    )
     avg = get_avg_eq_score()
     logger.info("🧠 EQ Score for %s: %d/100 | Avg: %.1f", contact, result.get("eq_score", 0), avg)
     stats = get_eq_stats()
