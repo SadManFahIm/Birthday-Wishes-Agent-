@@ -56,7 +56,8 @@ from email_digest import send_weekly_digest
 from voice import generate_voice
 from personality_profiling import (init_personality_table, analyze_personality,
                                    get_personality_profile,
-                                   build_personality_instructions)
+                                   build_personality_instructions,
+                                   run_personality_profiling)
 from predictive_birthday import (
     init_predicted_birthday_table,
     run_predictive_birthday,
@@ -137,6 +138,50 @@ EQ_MIN_SCORE_THRESHOLD = 70
 
 # ── CONNECTION TRACKER ────────────────────────
 CONNECTION_TRACKER_ENABLED = True
+
+# ── MEMORY ────────────────────────────────────
+MEMORY_ENABLED = True
+RAG_MEMORY_ENABLED = False
+
+# ── POST ENGAGEMENT ───────────────────────────
+POST_ENGAGEMENT_ENABLED = True
+ENGAGEMENT_MODE = "like_and_comment"
+MAX_ENGAGEMENTS_PER_DAY = 10
+
+# ── BIRTHDAY REMINDER ─────────────────────────
+BIRTHDAY_REMINDER_ENABLED = True
+
+# ── GROUP BIRTHDAY ────────────────────────────
+GROUP_BIRTHDAY_ENABLED = True
+MAX_GROUP_ENGAGEMENTS = 10
+GROUP_COMMENT_ENABLED = True
+GROUP_DM_ENABLED = True
+
+# ── AUTO REPLY FOLLOWUP ───────────────────────
+AUTO_REPLY_FOLLOWUP_ENABLED = True
+MAX_AUTO_REPLIES_PER_DAY = 10
+
+# ── OCCASION DETECTION ────────────────────────
+OCCASION_DETECTION_ENABLED = True
+
+# ── DM CAMPAIGN ───────────────────────────────
+DM_CAMPAIGN_ENABLED = False
+CAMPAIGN_TYPE = "new_connections"
+MAX_DM_PER_DAY = 10
+DM_COOLDOWN_DAYS = 30
+CAMPAIGN_VARIANT = "A"
+
+# ── CONTACT CATEGORIZER ───────────────────────
+CONTACT_CATEGORIZER_ENABLED = True
+CATEGORIZER_MAX_CONTACTS = 50
+
+# ── EMAIL DIGEST ──────────────────────────────
+EMAIL_DIGEST_ENABLED = True
+DIGEST_DAY = "monday"
+
+# ── HEALTH REPORT ─────────────────────────────
+HEALTH_REPORT_ENABLED = True
+HEALTH_REPORT_DAY = "monday"
 
 if not USERNAME or not PASSWORD:
     raise EnvironmentError("❌ USERNAME or PASSWORD missing in .env")
