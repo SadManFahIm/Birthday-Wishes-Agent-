@@ -97,7 +97,66 @@ if not USERNAME or not PASSWORD:
 
 
 # ──────────────────────────────────────────────
-# 3. SQLITE LOGGING
+# 3. AI MODEL SELECTOR  🆕
+# ──────────────────────────────────────────────
+# Set AI_MODEL in your .env file:
+#   AI_MODEL=gemini       → Google Gemini 2.5 Pro  (default)
+#   AI_MODEL=gpt-4o       → OpenAI GPT-4o
+#
+# You must also set the matching API key:
+#   GOOGLE_API_KEY=...    (for gemini)
+#   OPENAI_API_KEY=...    (for gpt-4o)
+
+AI_MODEL = config.get("AI_MODEL", "gemini").strip().lower()
+
+SUPPORTED_MODELS = {
+    "gemini":  "Google Gemini 2.5 Pro",
+    "gpt-4o":  "OpenAI GPT-4o",
+}
+
+if AI_MODEL not in SUPPORTED_MODELS:
+    logger.warning(
+        "⚠️  Unknown AI_MODEL '%s'. Falling back to 'gemini'. "
+        "Supported: %s",
+        AI_MODEL, list(SUPPORTED_MODELS.keys())
+    )
+    AI_MODEL = "gemini"
+
+logger.info("🤖 AI Model: %s (%s)", AI_MODEL, SUPPORTED_MODELS[AI_MODEL])
+
+
+def _build_llm():
+    """Build LLM based on AI_MODEL from .env"""
+    if AI_MODEL == "gpt-4o":
+        api_key = config.get("OPENAI_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "❌ OPENAI_API_KEY missing in .env — required for AI_MODEL=gpt-4o"
+            )
+        logger.info("🔑 Using OpenAI API key.")
+        return ChatOpenAI(
+            model="gpt-4o",
+            api_key=api_key,
+        )
+    else:
+        # Default: Gemini 2.5 Pro
+        api_key = config.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "❌ GOOGLE_API_KEY missing in .env — required for AI_MODEL=gemini"
+            )
+        logger.info("🔑 Using Google API key.")
+        return ChatGoogleGenerativeAI(
+            model="models/gemini-2.5-pro-preview-05-06",
+            google_api_key=api_key,
+        )
+
+
+llm = _build_llm()
+
+
+# ──────────────────────────────────────────────
+# 4. SQLITE LOGGING
 # ──────────────────────────────────────────────
 DB_FILE = Path("agent_history.db")
 
@@ -145,7 +204,7 @@ def get_recent_contacts(task: str, days: int) -> set[str]:
 
 
 # ──────────────────────────────────────────────
-# 4. WHITELIST / BLACKLIST / COOLDOWN HELPERS
+# 5. WHITELIST / BLACKLIST / COOLDOWN HELPERS
 # ──────────────────────────────────────────────
 def is_allowed(name: str) -> bool:
     name_lower = name.lower()
@@ -170,7 +229,7 @@ def filter_notice(task: str) -> str:
 
 
 # ──────────────────────────────────────────────
-# 5. SESSION MANAGEMENT
+# 6. SESSION MANAGEMENT
 # ──────────────────────────────────────────────
 SESSION_FILE = Path("linkedin_session.json")
 SESSION_MAX_AGE_HOURS = 12
@@ -205,20 +264,13 @@ def save_session_timestamp():
 
 
 # ──────────────────────────────────────────────
-# 6. BROWSER
+# 7. BROWSER
 # ──────────────────────────────────────────────
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 
 browser = Browser(
     config=BrowserConfig(user_data_dir=BROWSER_PROFILE_DIR)
 )
-
-
-# ──────────────────────────────────────────────
-# 7. LLM
-# ──────────────────────────────────────────────
-# llm = ChatOpenAI(model="gpt-4o")
-llm = ChatGoogleGenerativeAI(model="models/gemini-2.5-flash-preview-04-17")
 
 
 # ──────────────────────────────────────────────
@@ -661,7 +713,6 @@ async def run_post_engagement_task():
     logger.info("=== LinkedIn Post Engagement === [DRY RUN: %s | MODE: %s]",
                 DRY_RUN, ENGAGEMENT_MODE)
 
-    # Sample contacts — in production these come from birthday detection result
     sample_contacts = [
         {"name": "Birthday Contact", "profile_url": "", "relationship": "colleague"}
     ]
@@ -702,31 +753,24 @@ async def daily_job():
         if SENTIMENT_ANALYSIS_ENABLED or AUTO_CONNECT_ENABLED:
             await run_sentiment_reply_task()
 
-        # Memory-aware birthday wishes
         if MEMORY_ENABLED:
             await run_memory_wish_task()
 
-        # Post engagement (like + comment on birthday contacts' posts)
         if POST_ENGAGEMENT_ENABLED:
             await run_post_engagement_task()
 
-        # Birthday reminder email for tomorrow's birthdays
         if BIRTHDAY_REMINDER_ENABLED:
             await run_birthday_reminder_task()
 
-        # Group birthday detection
         if GROUP_BIRTHDAY_ENABLED:
             await run_group_birthday_task()
 
-        # Auto reply to follow-up responses
         if AUTO_REPLY_FOLLOWUP_ENABLED:
             await run_auto_reply_task()
 
-        # Occasion detection (promotion, new job, graduation, etc.)
         if OCCASION_DETECTION_ENABLED:
             await run_occasion_detection_task()
 
-        # Weekly relationship health report (Mondays only)
         if HEALTH_REPORT_ENABLED:
             from datetime import date
             if date.today().strftime("%A").lower() == HEALTH_REPORT_DAY.lower():
@@ -778,7 +822,7 @@ async def main():
     init_auto_reply_table()
     init_health_table()
     if CONNECTION_TRACKER_ENABLED:
-        sync_from_history()  # Sync existing history into tracker
+        sync_from_history()
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
@@ -791,13 +835,13 @@ async def main():
         # await run_whatsapp_reply_task()
         # await run_facebook_reply_task()
         # await run_instagram_reply_task()
-        # await run_memory_wish_task()         # Memory-aware wishes
-        # await run_post_engagement_task()    # Like + comment on posts
-        # await run_birthday_reminder_task()  # Reminder email for tomorrow's birthdays
-        # await run_group_birthday_task()      # Group birthday detection
-        # await run_auto_reply_task()           # Auto reply to follow-up responses
-        # await run_occasion_detection_task()  # Occasion detection & congratulations
-        # await run_health_report_task()        # Weekly relationship health report
+        # await run_memory_wish_task()
+        # await run_post_engagement_task()
+        # await run_birthday_reminder_task()
+        # await run_group_birthday_task()
+        # await run_auto_reply_task()
+        # await run_occasion_detection_task()
+        # await run_health_report_task()
 
         # Run ALL platforms on daily schedule:
         await run_scheduler()
