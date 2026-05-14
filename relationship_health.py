@@ -438,113 +438,130 @@ def build_report_email(report: dict) -> tuple[str, str]:
         for r in report.get("top_recommendations", [])
     )
 
-    html = f"""
-<!DOCTYPE html>
-<html>
-<body style="font-family:Arial,sans-serif;max-width:700px;margin:auto;
-             background:#0E1117;color:#FAFAFA;padding:20px;">
+    # Build HTML template with proper escaping
+    # Use string literals for CSS styles to avoid f-string brace conflicts
+    html = (
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<body style='font-family:Arial,sans-serif;max-width:700px;margin:auto;"
+        "background:#0E1117;color:#FAFAFA;padding:20px;'>\n"
+        "\n"
+        "  <!-- Header -->\n"
+        "  <div style='background:linear-gradient(135deg,#1a237e,#4CAF50);"
+        "padding:30px;border-radius:12px;text-align:center;'>\n"
+        "    <h1 style='margin:0;font-size:1.8rem;'>📊 Weekly Relationship Health Report</h1>\n"
+        f"    <p style='margin:8px 0 0;opacity:0.85;'>{week}</p>\n"
+        "  </div>\n"
+        "\n"
+        "  <!-- Summary Cards -->\n"
+        "  <div style='display:flex;gap:12px;margin:20px 0;flex-wrap:wrap;'>\n"
+        "    <div style='flex:1;background:#1E2329;border-radius:12px;"
+        "padding:16px;text-align:center;min-width:120px;'>\n"
+        f"      <div style='font-size:1.8rem;font-weight:700;color:{avg_color};'>{avg}</div>\n"
+        "      <div style='color:#888;font-size:0.85rem;'>Avg Score</div>\n"
+        "    </div>\n"
+        "    <div style='flex:1;background:#1E2329;border-radius:12px;"
+        "padding:16px;text-align:center;min-width:120px;'>\n"
+        f"      <div style='font-size:1.8rem;font-weight:700;color:#4CAF50;'>\n"
+        f"        {summary['healthy']}\n"
+        "      </div>\n"
+        "      <div style='color:#888;font-size:0.85rem;'>🟢 Healthy</div>\n"
+        "    </div>\n"
+        "    <div style='flex:1;background:#1E2329;border-radius:12px;"
+        "padding:16px;text-align:center;min-width:120px;'>\n"
+        f"      <div style='font-size:1.8rem;font-weight:700;color:#FFC107;'>\n"
+        f"        {summary['neutral']}\n"
+        "      </div>\n"
+        "      <div style='color:#888;font-size:0.85rem;'>🟡 Neutral</div>\n"
+        "    </div>\n"
+        "    <div style='flex:1;background:#1E2329;border-radius:12px;"
+        "padding:16px;text-align:center;min-width:120px;'>\n"
+        f"      <div style='font-size:1.8rem;font-weight:700;color:#FF9800;'>\n"
+        f"        {summary['at_risk']}\n"
+        "      </div>\n"
+        "      <div style='color:#888;font-size:0.85rem;'>🟠 At Risk</div>\n"
+        "    </div>\n"
+        "    <div style='flex:1;background:#1E2329;border-radius:12px;"
+        "padding:16px;text-align:center;min-width:120px;'>\n"
+        f"      <div style='font-size:1.8rem;font-weight:700;color:#F44336;'>\n"
+        f"        {summary['critical']}\n"
+        "      </div>\n"
+        "      <div style='color:#888;font-size:0.85rem;'>🔴 Critical</div>\n"
+        "    </div>\n"
+        "  </div>\n"
+        "\n"
+        "  <!-- Top Recommendations -->\n"
+    )
 
-  <!-- Header -->
-  <div style="background:linear-gradient(135deg,#1a237e,#4CAF50);
-              padding:30px;border-radius:12px;text-align:center;">
-    <h1 style="margin:0;font-size:1.8rem;">📊 Weekly Relationship Health Report</h1>
-    <p style="margin:8px 0 0;opacity:0.85;">{week}</p>
-  </div>
+    if top_recs_html:
+        html += (
+            "  <div style='background:#1a2a1a;border-left:4px solid #4CAF50;"
+            "padding:16px;border-radius:8px;margin:16px 0;'>\n"
+            "    <h3 style='margin:0 0 10px;color:#4CAF50;'>🎯 Top Action Items This Week</h3>\n"
+            f"    <ul style='margin:0;padding-left:20px;'>{top_recs_html}</ul>\n"
+            "  </div>\n"
+        )
 
-  <!-- Summary Cards -->
-  <div style="display:flex;gap:12px;margin:20px 0;flex-wrap:wrap;">
-    <div style="flex:1;background:#1E2329;border-radius:12px;
-                padding:16px;text-align:center;min-width:120px;">
-      <div style="font-size:1.8rem;font-weight:700;color:{avg_color};">{avg}</div>
-      <div style="color:#888;font-size:0.85rem;">Avg Score</div>
-    </div>
-    <div style="flex:1;background:#1E2329;border-radius:12px;
-                padding:16px;text-align:center;min-width:120px;">
-      <div style="font-size:1.8rem;font-weight:700;color:#4CAF50;">
-        {summary['healthy']}
-      </div>
-      <div style="color:#888;font-size:0.85rem;">🟢 Healthy</div>
-    </div>
-    <div style="flex:1;background:#1E2329;border-radius:12px;
-                padding:16px;text-align:center;min-width:120px;">
-      <div style="font-size:1.8rem;font-weight:700;color:#FFC107;">
-        {summary['neutral']}
-      </div>
-      <div style="color:#888;font-size:0.85rem;">🟡 Neutral</div>
-    </div>
-    <div style="flex:1;background:#1E2329;border-radius:12px;
-                padding:16px;text-align:center;min-width:120px;">
-      <div style="font-size:1.8rem;font-weight:700;color:#FF9800;">
-        {summary['at_risk']}
-      </div>
-      <div style="color:#888;font-size:0.85rem;">🟠 At Risk</div>
-    </div>
-    <div style="flex:1;background:#1E2329;border-radius:12px;
-                padding:16px;text-align:center;min-width:120px;">
-      <div style="font-size:1.8rem;font-weight:700;color:#F44336;">
-        {summary['critical']}
-      </div>
-      <div style="color:#888;font-size:0.85rem;">🔴 Critical</div>
-    </div>
-  </div>
+    # At Risk Contacts
+    if summary['at_risk'] > 0:
+        html += (
+            "  <!-- At Risk Contacts -->\n"
+            f"  <h3 style='color:#FF9800;margin-top:24px;'>🟠 At Risk ({summary['at_risk']})</h3>\n"
+            "  <table style='width:100%;border-collapse:collapse;background:#1E2329;"
+            "border-radius:8px;'>\n"
+            "    <tr style='background:#2E3440;'>\n"
+            "      <th style='padding:10px;text-align:left;color:#aaa;'>Contact</th>\n"
+            "      <th style='padding:10px;color:#aaa;'>Score</th>\n"
+            "      <th style='padding:10px;text-align:left;color:#aaa;'>Recommendation</th>\n"
+            "    </tr>\n"
+            f"    {build_rows(report['at_risk'], '#FF9800')}\n"
+            "  </table>\n"
+        )
 
-  <!-- Top Recommendations -->
-  {"" if not top_recs_html else f'''
-  <div style="background:#1a2a1a;border-left:4px solid #4CAF50;
-              padding:16px;border-radius:8px;margin:16px 0;">
-    <h3 style="margin:0 0 10px;color:#4CAF50;">🎯 Top Action Items This Week</h3>
-    <ul style="margin:0;padding-left:20px;">{top_recs_html}</ul>
-  </div>
-  '''}
+    # Critical Contacts
+    if summary['critical'] > 0:
+        html += (
+            "  <!-- Critical Contacts -->\n"
+            f"  <h3 style='color:#F44336;margin-top:24px;'>🔴 Critical ({summary['critical']})</h3>\n"
+            "  <table style='width:100%;border-collapse:collapse;background:#1E2329;"
+            "border-radius:8px;'>\n"
+            "    <tr style='background:#2E3440;'>\n"
+            "      <th style='padding:10px;text-align:left;color:#aaa;'>Contact</th>\n"
+            "      <th style='padding:10px;color:#aaa;'>Score</th>\n"
+            "      <th style='padding:10px;text-align:left;color:#aaa;'>Recommendation</th>\n"
+            "    </tr>\n"
+            f"    {build_rows(report['critical'], '#F44336')}\n"
+            "  </table>\n"
+        )
 
-  <!-- At Risk Contacts -->
-  {f"""
-  <h3 style="color:#FF9800;margin-top:24px;">🟠 At Risk ({summary['at_risk']})</h3>
-  <table style="width:100%;border-collapse:collapse;background:#1E2329;border-radius:8px;">
-    <tr style="background:#2E3440;">
-      <th style="padding:10px;text-align:left;color:#aaa;">Contact</th>
-      <th style="padding:10px;color:#aaa;">Score</th>
-      <th style="padding:10px;text-align:left;color:#aaa;">Recommendation</th>
-    </tr>
-    {build_rows(report['at_risk'], '#FF9800')}
-  </table>
-  """ if summary['at_risk'] > 0 else ""}
+    # Healthy Contacts
+    if summary['healthy'] > 0:
+        html += (
+            "  <!-- Healthy Contacts -->\n"
+            f"  <h3 style='color:#4CAF50;margin-top:24px;'>🟢 Healthy ({summary['healthy']})</h3>\n"
+            "  <table style='width:100%;border-collapse:collapse;background:#1E2329;"
+            "border-radius:8px;'>\n"
+            "    <tr style='background:#2E3440;'>\n"
+            "      <th style='padding:10px;text-align:left;color:#aaa;'>Contact</th>\n"
+            "      <th style='padding:10px;color:#aaa;'>Score</th>\n"
+            "      <th style='padding:10px;text-align:left;color:#aaa;'>Note</th>\n"
+            "    </tr>\n"
+            f"    {build_rows(report['healthy'], '#4CAF50')}\n"
+            "  </table>\n"
+        )
 
-  <!-- Critical Contacts -->
-  {f"""
-  <h3 style="color:#F44336;margin-top:24px;">🔴 Critical ({summary['critical']})</h3>
-  <table style="width:100%;border-collapse:collapse;background:#1E2329;border-radius:8px;">
-    <tr style="background:#2E3440;">
-      <th style="padding:10px;text-align:left;color:#aaa;">Contact</th>
-      <th style="padding:10px;color:#aaa;">Score</th>
-      <th style="padding:10px;text-align:left;color:#aaa;">Recommendation</th>
-    </tr>
-    {build_rows(report['critical'], '#F44336')}
-  </table>
-  """ if summary['critical'] > 0 else ""}
+    # Footer
+    html += (
+        "  <!-- Footer -->\n"
+        "  <p style='color:#555;font-size:0.8rem;text-align:center;margin-top:24px;'>\n"
+        "    🎂 Birthday Wishes Agent v5.0 — Relationship Health Report<br>\n"
+        f"    {total} contacts analyzed | Generated {datetime.now().strftime('%B %d, %Y at %H:%M')}\n"
+        "  </p>\n"
+        "\n"
+        "</body>\n"
+        "</html>"
+    )
 
-  <!-- Healthy Contacts -->
-  {f"""
-  <h3 style="color:#4CAF50;margin-top:24px;">🟢 Healthy ({summary['healthy']})</h3>
-  <table style="width:100%;border-collapse:collapse;background:#1E2329;border-radius:8px;">
-    <tr style="background:#2E3440;">
-      <th style="padding:10px;text-align:left;color:#aaa;">Contact</th>
-      <th style="padding:10px;color:#aaa;">Score</th>
-      <th style="padding:10px;text-align:left;color:#aaa;">Note</th>
-    </tr>
-    {build_rows(report['healthy'], '#4CAF50')}
-  </table>
-  """ if summary['healthy'] > 0 else ""}
-
-  <!-- Footer -->
-  <p style="color:#555;font-size:0.8rem;text-align:center;margin-top:24px;">
-    🎂 Birthday Wishes Agent v5.0 — Relationship Health Report<br>
-    {total} contacts analyzed | Generated {datetime.now().strftime('%B %d, %Y at %H:%M')}
-  </p>
-
-</body>
-</html>
-"""
     return subject, html
 
 

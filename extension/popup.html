@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        width: 280px;
+        min-height: 320px;
+        font-family: "Segoe UI", sans-serif;
+        background: #0e1117;
+        color: #fafafa;
+        padding: 0;
+      }
+      .header {
+        background: linear-gradient(135deg, #1a237e, #4caf50);
+        padding: 16px;
+        text-align: center;
+      }
+      .header h2 {
+        font-size: 1rem;
+        margin-top: 4px;
+      }
+      .body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      label {
+        font-size: 0.78rem;
+        color: #888;
+        display: block;
+        margin-bottom: 4px;
+      }
+      input {
+        width: 100%;
+        background: #1e2329;
+        border: 1px solid #2e3440;
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: #fafafa;
+        font-size: 0.85rem;
+        font-family: inherit;
+      }
+      input:focus {
+        outline: none;
+        border-color: #4caf50;
+      }
+      button {
+        width: 100%;
+        background: #4caf50;
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 10px;
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 600;
+      }
+      button:hover {
+        background: #43a047;
+      }
+      .status {
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
+        background: #1e2329;
+      }
+      .connected {
+        color: #4caf50;
+      }
+      .disconnected {
+        color: #f44336;
+      }
+      .divider {
+        border: none;
+        border-top: 1px solid #2e3440;
+      }
+      .info {
+        font-size: 0.75rem;
+        color: #555;
+        text-align: center;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div style="font-size: 1.8rem">🎂</div>
+      <h2>Birthday Wishes Agent</h2>
+    </div>
+    <div class="body">
+      <div class="status" id="statusBox">
+        <span id="statusText">Checking connection...</span>
+      </div>
+      <hr class="divider" />
+      <div>
+        <label>API URL</label>
+        <input id="apiUrl" placeholder="http://localhost:8000" />
+      </div>
+      <div>
+        <label>Username</label>
+        <input id="username" placeholder="admin" />
+      </div>
+      <div>
+        <label>Password</label>
+        <input id="password" type="password" placeholder="••••••••" />
+      </div>
+      <button id="loginBtn">Sign In</button>
+      <div
+        id="msg"
+        style="font-size: 0.78rem; text-align: center; min-height: 16px"
+      ></div>
+      <hr class="divider" />
+      <p class="info">
+        Open a LinkedIn profile to see contact info, notes, and wish history in
+        the sidebar.
+      </p>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      // Load saved settings
+      chrome.storage.local.get(
+        ["bwa_token", "bwa_api_url", "bwa_username"],
+        (d) => {
+          $("apiUrl").value = d.bwa_api_url || "http://localhost:8000";
+          $("username").value = d.bwa_username || "admin";
+          if (d.bwa_token)
+            checkConnection(
+              d.bwa_api_url || "http://localhost:8000",
+              d.bwa_token,
+            );
+        },
+      );
+
+      async function checkConnection(apiUrl, token) {
+        try {
+          const res = await fetch(`${apiUrl}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            $("statusBox").className = "status connected";
+            $("statusText").textContent = `✅ Connected as ${data.username}`;
+          } else {
+            throw new Error();
+          }
+        } catch {
+          $("statusBox").className = "status disconnected";
+          $("statusText").textContent = "❌ Not connected";
+        }
+      }
+
+      $("loginBtn").addEventListener("click", async () => {
+        const apiUrl = $("apiUrl").value.trim().replace(/\/$/, "");
+        const username = $("username").value.trim();
+        const password = $("password").value;
+        const msg = $("msg");
+
+        if (!username || !password) {
+          msg.textContent = "Please enter username and password.";
+          msg.style.color = "#F44336";
+          return;
+        }
+
+        $("loginBtn").textContent = "Signing in...";
+        $("loginBtn").disabled = true;
+
+        try {
+          const form = new URLSearchParams({ username, password });
+          const res = await fetch(`${apiUrl}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form,
+          });
+
+          if (!res.ok) throw new Error("Invalid credentials");
+          const data = await res.json();
+
+          chrome.storage.local.set({
+            bwa_token: data.access_token,
+            bwa_api_url: apiUrl,
+            bwa_username: username,
+          });
+
+          $("statusBox").className = "status connected";
+          $("statusText").textContent = `✅ Connected as ${data.username}`;
+          msg.textContent = "✅ Signed in! Open a LinkedIn profile.";
+          msg.style.color = "#4CAF50";
+          $("password").value = "";
+        } catch (e) {
+          msg.textContent = "❌ Login failed. Check credentials and API URL.";
+          msg.style.color = "#F44336";
+        } finally {
+          $("loginBtn").textContent = "Sign In";
+          $("loginBtn").disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

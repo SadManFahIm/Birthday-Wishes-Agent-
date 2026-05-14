@@ -41,7 +41,46 @@ from tone_matching import detect_tone, get_tone_matched_reply, build_tone_matchi
 from occasion_detection import run_occasion_detection
 from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
 from relationship_health import (init_health_table, run_relationship_health_report)
+from best_time_connect import (init_activity_table, get_best_send_time,
+                               run_best_time_analysis, build_timing_notice)
+from dm_campaign import (init_campaign_table, run_dm_campaign, get_campaign_stats)
+from contact_categorizer import (init_categorizer_table, run_contact_categorizer,
+                                  get_contacts_by_category, get_category_stats)
+from ab_testing import (init_ab_table, get_ab_variant, log_ab_send,
+                         log_ab_reply, get_ab_results, generate_ab_wish)
+from rag_memory import (init_rag_memory, save_memory_to_rag,
+                         retrieve_relevant_memory, generate_rag_wish,
+                         migrate_from_sqlite_memory)
+from voice_to_text import run_voice_reply_task as run_voice_to_text_task
+from email_digest import send_weekly_digest
 from voice import generate_voice
+from personality_profiling import (init_personality_table, analyze_personality,
+                                   get_personality_profile,
+                                   build_personality_instructions,
+                                   run_personality_profiling)
+from predictive_birthday import (
+    init_predicted_birthday_table,
+    run_predictive_birthday,
+    send_todays_predicted_wishes,
+    get_prediction_stats,
+    get_todays_predicted_birthdays,
+)
+from emotional_intelligence import (
+    init_eq_table,
+    score_reply,
+    save_eq_score,
+    get_avg_eq_score,
+    build_eq_instructions,
+    get_eq_stats,
+)
+from multi_account import (
+    init_accounts_table,
+    register_account,
+    get_enabled_accounts,
+    get_account_stats,
+    run_multi_account_birthday_detection,
+    run_multi_account_reply,
+)
 
 # ──────────────────────────────────────────────
 # 1. LOGGING SETUP
@@ -82,8 +121,9 @@ ENABLE_FACEBOOK  = True
 ENABLE_INSTAGRAM = True
 
 # ── VOICE MESSAGE SETTINGS ────────────────────
-VOICE_ENABLED = True
-VOICE_ENGINE  = "gtts"
+VOICE_ENABLED        = True
+VOICE_ENGINE         = "gtts"
+TRANSCRIPTION_ENGINE = "google"
 
 # ── SENTIMENT ANALYSIS ────────────────────────
 SENTIMENT_ANALYSIS_ENABLED = True
@@ -91,6 +131,77 @@ SENTIMENT_ANALYSIS_ENABLED = True
 # ── AUTO-CONNECT ──────────────────────────────
 AUTO_CONNECT_ENABLED = True
 MAX_CONNECTS_PER_DAY = 10
+
+# ── PERSONALITY PROFILING ─────────────────────
+PERSONALITY_PROFILING_ENABLED = True
+
+# ── PREDICTIVE BIRTHDAY ───────────────────────
+PREDICTIVE_BIRTHDAY_ENABLED = True
+MAX_BIRTHDAY_PREDICTIONS    = 20
+PREDICTION_MIN_CONFIDENCE   = "medium"
+
+# ── EMOTIONAL INTELLIGENCE ────────────────────
+EQ_SCORING_ENABLED     = True
+EQ_MIN_SCORE_THRESHOLD = 70
+
+# ── MULTI-ACCOUNT ─────────────────────────────
+MULTI_ACCOUNT_ENABLED = True
+# .env থেকে additional accounts load হবে:
+#   ACCOUNT_2_LABEL=work
+#   ACCOUNT_2_USERNAME=work@example.com
+#   ACCOUNT_2_PASSWORD=workpass
+#   ACCOUNT_3_LABEL=recruiter
+#   ACCOUNT_3_USERNAME=recruit@example.com
+#   ACCOUNT_3_PASSWORD=recruitpass
+# Maximum 10 accounts supported (ACCOUNT_2 … ACCOUNT_10)
+MAX_EXTRA_ACCOUNTS = 9
+
+# ── CONNECTION TRACKER ────────────────────────
+CONNECTION_TRACKER_ENABLED = True
+
+# ── MEMORY ────────────────────────────────────
+MEMORY_ENABLED     = True
+RAG_MEMORY_ENABLED = False
+
+# ── POST ENGAGEMENT ───────────────────────────
+POST_ENGAGEMENT_ENABLED = True
+ENGAGEMENT_MODE         = "like_and_comment"
+MAX_ENGAGEMENTS_PER_DAY = 10
+
+# ── BIRTHDAY REMINDER ─────────────────────────
+BIRTHDAY_REMINDER_ENABLED = True
+
+# ── GROUP BIRTHDAY ────────────────────────────
+GROUP_BIRTHDAY_ENABLED = True
+MAX_GROUP_ENGAGEMENTS  = 10
+GROUP_COMMENT_ENABLED  = True
+GROUP_DM_ENABLED       = True
+
+# ── AUTO REPLY FOLLOWUP ───────────────────────
+AUTO_REPLY_FOLLOWUP_ENABLED = True
+MAX_AUTO_REPLIES_PER_DAY    = 10
+
+# ── OCCASION DETECTION ────────────────────────
+OCCASION_DETECTION_ENABLED = True
+
+# ── DM CAMPAIGN ───────────────────────────────
+DM_CAMPAIGN_ENABLED = False
+CAMPAIGN_TYPE       = "new_connections"
+MAX_DM_PER_DAY      = 10
+DM_COOLDOWN_DAYS    = 30
+CAMPAIGN_VARIANT    = "A"
+
+# ── CONTACT CATEGORIZER ───────────────────────
+CONTACT_CATEGORIZER_ENABLED = True
+CATEGORIZER_MAX_CONTACTS    = 50
+
+# ── EMAIL DIGEST ──────────────────────────────
+EMAIL_DIGEST_ENABLED = True
+DIGEST_DAY           = "monday"
+
+# ── HEALTH REPORT ─────────────────────────────
+HEALTH_REPORT_ENABLED = True
+HEALTH_REPORT_DAY     = "monday"
 
 if not USERNAME or not PASSWORD:
     raise EnvironmentError("❌ USERNAME or PASSWORD missing in .env")
@@ -230,8 +341,9 @@ def filter_notice(task: str) -> str:
 
 # ──────────────────────────────────────────────
 # 6. SESSION MANAGEMENT
+# 5. SESSION MANAGEMENT (primary account)
 # ──────────────────────────────────────────────
-SESSION_FILE = Path("linkedin_session.json")
+SESSION_FILE          = Path("linkedin_session.json")
 SESSION_MAX_AGE_HOURS = 12
 
 
@@ -239,7 +351,7 @@ def session_is_valid() -> bool:
     if not SESSION_FILE.exists():
         return False
     try:
-        data = json.loads(SESSION_FILE.read_text())
+        data      = json.loads(SESSION_FILE.read_text())
         age_hours = (time.time() - data.get("saved_at", 0)) / 3600
         if age_hours > SESSION_MAX_AGE_HOURS:
             logger.info("⏰ Session expired. Will re-login.")
@@ -265,6 +377,7 @@ def save_session_timestamp():
 
 # ──────────────────────────────────────────────
 # 7. BROWSER
+# 6. BROWSER (primary account)
 # ──────────────────────────────────────────────
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 
@@ -456,15 +569,11 @@ async def run_birthday_detection_task():
 
 
 async def run_ai_custom_wish_task():
-    """Birthday detection with AI-generated personalized wishes."""
     logger.info("=== LinkedIn: AI Custom Wishes === [DRY RUN: %s]", DRY_RUN)
     async def _run():
         return await run_linkedin_birthday_with_custom_wish(
-            llm=llm,
-            browser=browser,
-            dry_run=DRY_RUN,
-            username=USERNAME,
-            password=PASSWORD,
+            llm=llm, browser=browser, dry_run=DRY_RUN,
+            username=USERNAME, password=PASSWORD,
             already_logged_in=session_is_valid(),
             filter_notice=filter_notice("LinkedIn-BirthdayDetection"),
             wish_detection_rules=WISH_DETECTION_RULES,
@@ -476,27 +585,20 @@ async def run_ai_custom_wish_task():
 
 
 async def run_sentiment_reply_task():
-    """Reply to LinkedIn wishes with sentiment-aware messages + auto connect."""
     logger.info("=== LinkedIn: Sentiment-Aware Reply === [DRY RUN: %s]", DRY_RUN)
-    logged_in = session_is_valid()
-
+    logged_in              = session_is_valid()
     sentiment_instructions = build_sentiment_instructions() if SENTIMENT_ANALYSIS_ENABLED else ""
     connect_instructions   = build_auto_connect_task(
-        username=USERNAME,
-        password=PASSWORD,
-        already_logged_in=logged_in,
-        dry_run=DRY_RUN,
+        username=USERNAME, password=PASSWORD,
+        already_logged_in=logged_in, dry_run=DRY_RUN,
     ) if AUTO_CONNECT_ENABLED else ""
-
-    task = build_linkedin_reply_task(logged_in)
-    task = task + f"""
+    task = build_linkedin_reply_task(logged_in) + f"""
   ADDITIONAL INSTRUCTIONS:
   {sentiment_instructions}
   {connect_instructions}
 """
     async def _run():
         return await Agent(task=task, llm=llm, browser=browser).run()
-
     result = await run_with_retry(_run, "LinkedIn-SentimentReply")
     save_session_timestamp()
     send_summary("LinkedIn - Sentiment Reply + Auto Connect", [], 0, DRY_RUN)
@@ -511,8 +613,7 @@ async def run_whatsapp_reply_task():
             wish_detection_rules=WISH_DETECTION_RULES,
             reply_templates=PERSONALIZED_REPLY_TEMPLATES,
             filter_notice=filter_notice("WhatsApp-Reply"),
-            voice_enabled=VOICE_ENABLED,
-            voice_engine=VOICE_ENGINE,
+            voice_enabled=VOICE_ENABLED, voice_engine=VOICE_ENGINE,
         )
     result = await run_with_retry(_run, "WhatsApp-Reply")
     send_summary("WhatsApp - Reply to Wishes", [], 0, DRY_RUN)
@@ -548,14 +649,10 @@ async def run_instagram_reply_task():
 
 
 async def run_calendar_export():
-    """Scrape LinkedIn birthdays and export to .ics file."""
     logger.info("=== Birthday Calendar Export ===")
     path = await export_birthday_calendar(
-        llm=llm,
-        browser=browser,
-        username=USERNAME,
-        password=PASSWORD,
-        already_logged_in=session_is_valid(),
+        llm=llm, browser=browser, username=USERNAME,
+        password=PASSWORD, already_logged_in=session_is_valid(),
     )
     if path:
         logger.info("✅ Calendar exported to: %s", path)
@@ -563,45 +660,32 @@ async def run_calendar_export():
 
 
 async def run_followup_task():
-    """Send follow-up messages to contacts whose birthday was 2-3 days ago."""
     logger.info("=== Follow-up Messages === [DRY RUN: %s]", DRY_RUN)
-
     pending = get_pending_followups()
     if not pending:
         logger.info("📭 No follow-ups due today.")
         return
-
     task = build_followup_task(
-        pending=pending,
-        dry_run=DRY_RUN,
-        username=USERNAME,
-        password=PASSWORD,
+        pending=pending, dry_run=DRY_RUN,
+        username=USERNAME, password=PASSWORD,
         already_logged_in=session_is_valid(),
     )
-
     async def _run():
         return await Agent(task=task, llm=llm, browser=browser).run()
-
     result = await run_with_retry(_run, "FollowUp")
     save_session_timestamp()
-
     if not DRY_RUN:
         for item in pending:
             mark_followup_sent(item["id"])
-
     send_summary("Follow-up Messages", [p["contact"] for p in pending], 0, DRY_RUN)
-    logger.info("Follow-up Result: %s", result)
     return result
 
 
 async def run_memory_wish_task():
-    """Send birthday wishes that reference last year's context."""
     logger.info("=== LinkedIn: Memory-Aware Wishes === [DRY RUN: %s]", DRY_RUN)
-    logged_in = session_is_valid()
-
     task = f"""
   Open the browser.
-  {"You are already logged into LinkedIn. Skip login." if True else ""}
+  You are already logged into LinkedIn. Skip login.
   {dry_run_notice()}
   {filter_notice("LinkedIn-BirthdayDetection")}
 
@@ -611,126 +695,338 @@ async def run_memory_wish_task():
     a) Apply contact filters.
     b) Visit their LinkedIn profile and note:
        - First name, job title, company, recent posts or achievements
-    c) Check memory context (will be provided below per contact).
-    d) Generate a wish that references last year's context if available.
-    e) Send the wish (or log if DRY RUN).
-
-  MEMORY SYSTEM:
-  Before wishing each contact, their last year's memory context
-  will be injected. Use it to make the wish feel personal and continuous.
-  If no memory → write a warm first-time wish and note their profile details
-  so they can be remembered next year.
-
-  After sending each wish, save these details for next year:
-    - Their current job title
-    - Their current company
-    - Any notable life events or achievements mentioned in their profile
-    - The wish message you sent
+    c) Generate a wish that references last year's context if available.
+    d) Send the wish (or log if DRY RUN).
 
   Stop after 20 contacts. TODAY only.
   Summary: wished (names + memory used Y/N), skipped (count+reason).
 """
-
     async def _run():
         return await Agent(task=task, llm=llm, browser=browser).run()
-
     result = await run_with_retry(_run, "LinkedIn-MemoryWish")
     save_session_timestamp()
     send_summary("LinkedIn - Memory-Aware Wishes", [], 0, DRY_RUN)
     return result
 
 
+async def run_email_digest_task():
+    logger.info("=== Weekly Email Digest === [DRY RUN: %s]", DRY_RUN)
+    data = await send_weekly_digest(dry_run=DRY_RUN)
+    logger.info(
+        "📧 Digest: %d actions | %d upcoming | %d fading",
+        data["wishes"]["total"],
+        len(data["upcoming_birthdays"]),
+        len(data["fading_connections"]),
+    )
+    return data
+
+
+async def run_voice_to_text_reply_task():
+    logger.info("=== Voice-to-Text Reply === [DRY RUN: %s | ENGINE: %s]",
+                DRY_RUN, TRANSCRIPTION_ENGINE)
+    result = await run_voice_to_text_task(
+        llm=llm, browser=browser, already_logged_in=session_is_valid(),
+        dry_run=DRY_RUN, username=USERNAME, password=PASSWORD,
+        transcription_engine=TRANSCRIPTION_ENGINE,
+        wish_detection_rules=WISH_DETECTION_RULES,
+        reply_templates=PERSONALIZED_REPLY_TEMPLATES,
+        filter_notice=filter_notice("WhatsApp-VoiceReply"),
+    )
+    send_summary("WhatsApp - Voice-to-Text Reply", [], 0, DRY_RUN)
+    return result
+
+
+async def run_rag_wish_task():
+    logger.info("=== RAG Birthday Wishes === [DRY RUN: %s]", DRY_RUN)
+    task = build_birthday_detection_task(session_is_valid()) + """
+  ADDITIONAL: Use the RAG memory system to enrich each wish.
+"""
+    async def _run():
+        return await Agent(task=task, llm=llm, browser=browser).run()
+    result = await run_with_retry(_run, "RAG-BirthdayWish")
+    save_session_timestamp()
+    send_summary("RAG Birthday Wishes", [], 0, DRY_RUN)
+    return result
+
+
+async def run_personality_task(contacts: list[dict] = None):
+    logger.info("=== Personality Profiling ===")
+    if not contacts:
+        logger.info("📭 No contacts provided for personality analysis.")
+        return []
+    results = []
+    for c in contacts:
+        profile = await analyze_personality(
+            llm=llm, browser=browser,
+            contact=c.get("name", ""),
+            profile_url=c.get("profile_url", ""),
+            already_logged_in=session_is_valid(),
+            username=USERNAME, password=PASSWORD,
+        )
+        if profile:
+            results.append({"contact": c.get("name"), "profile": profile})
+            logger.info("🎭 %s → %s (%s)",
+                        c.get("name"),
+                        profile.get("mbti_type", "?"),
+                        profile.get("communication_style", "?"))
+    return results
+
+
+async def run_categorizer_task():
+    logger.info("=== Contact Categorizer === [MAX: %d]", CATEGORIZER_MAX_CONTACTS)
+    count = await run_contact_categorizer(
+        llm=llm, browser=browser, username=USERNAME, password=PASSWORD,
+        already_logged_in=session_is_valid(), max_contacts=CATEGORIZER_MAX_CONTACTS,
+    )
+    stats = get_category_stats()
+    logger.info("🏷️  Categorized %d contacts | Industries: %s",
+                count, list(stats.get("by_industry", {}).keys())[:3])
+    return count
+
+
+async def run_dm_campaign_task():
+    logger.info("=== LinkedIn DM Campaign: %s === [DRY RUN: %s]",
+                CAMPAIGN_TYPE.upper(), DRY_RUN)
+    result = await run_dm_campaign(
+        llm=llm, browser=browser, campaign_type=CAMPAIGN_TYPE,
+        username=USERNAME, password=PASSWORD,
+        already_logged_in=session_is_valid(), dry_run=DRY_RUN,
+        max_dms=MAX_DM_PER_DAY, cooldown_days=DM_COOLDOWN_DAYS, variant=CAMPAIGN_VARIANT,
+    )
+    stats = get_campaign_stats()
+    logger.info("📊 Campaign stats: %d sent | %.1f%% reply rate",
+                stats.get("total_sent", 0), stats.get("reply_rate", 0))
+    return result
+
+
+async def run_best_time_task(contacts: list[dict] = None):
+    logger.info("=== Best Time to Connect Analysis ===")
+    if not contacts:
+        logger.info("📭 No contacts provided.")
+        return []
+    results = await run_best_time_analysis(
+        llm=llm, browser=browser, contacts=contacts,
+        already_logged_in=session_is_valid(),
+        username=USERNAME, password=PASSWORD,
+    )
+    for r in results:
+        logger.info("⏰ Best time for %s: %s at %d:00",
+                    r["contact"], r.get("best_day"), r.get("best_hour", 9))
+    return results
+
+
 async def run_health_report_task():
-    """Generate and send weekly relationship health report."""
     logger.info("=== Weekly Health Report === [DRY RUN: %s]", DRY_RUN)
     report = await run_relationship_health_report(dry_run=DRY_RUN)
-    logger.info(
-        "📊 Health report: %d contacts | Avg: %.1f",
-        report.get("total_contacts", 0),
-        report.get("average_score", 0),
-    )
+    logger.info("📊 Health report: %d contacts | Avg: %.1f",
+                report.get("total_contacts", 0), report.get("average_score", 0))
     return report
 
 
 async def run_occasion_detection_task():
-    """Scan LinkedIn for life events and send congratulations."""
     logger.info("=== Occasion Detection === [DRY RUN: %s]", DRY_RUN)
     await run_occasion_detection(
-        llm=llm,
-        browser=browser,
-        username=USERNAME,
-        password=PASSWORD,
-        already_logged_in=session_is_valid(),
-        dry_run=DRY_RUN,
+        llm=llm, browser=browser, username=USERNAME, password=PASSWORD,
+        already_logged_in=session_is_valid(), dry_run=DRY_RUN,
     )
 
 
 async def run_auto_reply_task():
-    """Reply to responses to our birthday wishes and follow-ups."""
     logger.info("=== Auto Reply to Follow-up === [DRY RUN: %s]", DRY_RUN)
     await run_auto_reply_followup(
-        llm=llm,
-        browser=browser,
-        username=USERNAME,
-        password=PASSWORD,
-        already_logged_in=session_is_valid(),
-        dry_run=DRY_RUN,
+        llm=llm, browser=browser, username=USERNAME, password=PASSWORD,
+        already_logged_in=session_is_valid(), dry_run=DRY_RUN,
         max_replies=MAX_AUTO_REPLIES_PER_DAY,
     )
 
 
 async def run_group_birthday_task():
-    """Detect and engage with birthday posts in LinkedIn Groups."""
     logger.info("=== Group Birthday Detection === [DRY RUN: %s]", DRY_RUN)
     await run_group_birthday_detection(
-        llm=llm,
-        browser=browser,
-        username=USERNAME,
-        password=PASSWORD,
-        already_logged_in=session_is_valid(),
-        dry_run=DRY_RUN,
+        llm=llm, browser=browser, username=USERNAME, password=PASSWORD,
+        already_logged_in=session_is_valid(), dry_run=DRY_RUN,
         max_engagements=MAX_GROUP_ENGAGEMENTS,
-        comment_enabled=GROUP_COMMENT_ENABLED,
-        dm_enabled=GROUP_DM_ENABLED,
+        comment_enabled=GROUP_COMMENT_ENABLED, dm_enabled=GROUP_DM_ENABLED,
     )
 
 
 async def run_birthday_reminder_task():
-    """Send reminder emails for tomorrow's birthdays."""
     logger.info("=== Birthday Reminder Email === [DRY RUN: %s]", DRY_RUN)
     await run_birthday_reminder(
-        llm=llm,
-        browser=browser,
-        username=USERNAME,
-        password=PASSWORD,
-        already_logged_in=session_is_valid(),
-        dry_run=DRY_RUN,
+        llm=llm, browser=browser, username=USERNAME, password=PASSWORD,
+        already_logged_in=session_is_valid(), dry_run=DRY_RUN,
     )
 
 
 async def run_post_engagement_task():
-    """Like and comment on birthday contacts' latest LinkedIn posts."""
     logger.info("=== LinkedIn Post Engagement === [DRY RUN: %s | MODE: %s]",
                 DRY_RUN, ENGAGEMENT_MODE)
 
     sample_contacts = [
         {"name": "Birthday Contact", "profile_url": "", "relationship": "colleague"}
     ]
-
     result = await run_post_engagement(
-        llm=llm,
-        browser=browser,
-        birthday_contacts=sample_contacts,
-        dry_run=DRY_RUN,
-        engagement_mode=ENGAGEMENT_MODE,
+        llm=llm, browser=browser, birthday_contacts=sample_contacts,
+        dry_run=DRY_RUN, engagement_mode=ENGAGEMENT_MODE,
         max_engagements=MAX_ENGAGEMENTS_PER_DAY,
     )
     send_summary("LinkedIn - Post Engagement", [], 0, DRY_RUN)
     return result
 
 
+async def run_personality_profiling_task(contacts: list[dict] = None):
+    logger.info("=== Personality Profiling ===")
+    if not contacts:
+        logger.info("📭 No contacts provided for profiling.")
+        return []
+    results = await run_personality_profiling(
+        llm=llm, browser=browser, contacts=contacts,
+        already_logged_in=session_is_valid(),
+        username=USERNAME, password=PASSWORD,
+    )
+    for r in results:
+        logger.info("🧠 %s → %s (%.0f%% confidence)",
+                    r["contact"], r.get("communication_style"),
+                    r.get("confidence", 0) * 100)
+    return results
+
+
+async def run_predictive_birthday_task(contacts: list[dict] = None):
+    logger.info(
+        "=== Predictive Birthday === [DRY RUN: %s | MAX: %d | MIN_CONF: %s]",
+        DRY_RUN, MAX_BIRTHDAY_PREDICTIONS, PREDICTION_MIN_CONFIDENCE,
+    )
+    if contacts:
+        results = await run_predictive_birthday(
+            contacts=contacts, llm=llm, browser=browser,
+            already_logged_in=session_is_valid(),
+            username=USERNAME, password=PASSWORD, dry_run=DRY_RUN,
+            max_predictions=MAX_BIRTHDAY_PREDICTIONS,
+            min_confidence=PREDICTION_MIN_CONFIDENCE,
+        )
+        today_count = sum(1 for r in results if r.get("is_birthday_today"))
+        logger.info("🔮 Predicted %d contacts | %d birthday today",
+                    len(results), today_count)
+    else:
+        logger.info("📭 No new contacts to predict. Checking saved predictions...")
+    wished = await send_todays_predicted_wishes(
+        llm=llm, browser=browser, already_logged_in=session_is_valid(),
+        username=USERNAME, password=PASSWORD, dry_run=DRY_RUN,
+    )
+    stats = get_prediction_stats()
+    logger.info(
+        "📊 Prediction DB: %d total | High: %d | Medium: %d | Low: %d | Wished: %d",
+        stats["total"],
+        stats["by_confidence"].get("high", 0),
+        stats["by_confidence"].get("medium", 0),
+        stats["by_confidence"].get("low", 0),
+        stats.get("wished", 0),
+    )
+    send_summary("Predictive Birthday", wished, 0, DRY_RUN)
+    save_session_timestamp()
+    return wished
+
+
+async def run_eq_scoring_task(reply_text: str = "", contact: str = "", context: str = ""):
+    logger.info("=== EQ Scoring === [DRY RUN: %s]", DRY_RUN)
+    if not reply_text:
+        logger.info("No reply text provided for EQ scoring.")
+        return None
+    result = await score_reply(reply_text=reply_text, context=context, llm=llm)
+    save_eq_score(
+        contact=contact, reply_text=reply_text,
+        eq_score=result.get("eq_score", 0),
+        breakdown=result.get("breakdown", {}),
+        tips=result.get("improvement_tips", []),
+    )
+    avg = get_avg_eq_score()
+    logger.info("🧠 EQ Score for %s: %d/100 | Avg: %.1f",
+                contact, result.get("eq_score", 0), avg)
+    logger.info("📊 EQ Stats: %s", get_eq_stats())
+    return result
+
+
 # ──────────────────────────────────────────────
-# 14. DAILY JOB (all platforms)
+# MULTI-ACCOUNT TASK RUNNER
+# ──────────────────────────────────────────────
+def _load_extra_accounts_from_env():
+    """
+    .env থেকে extra accounts load করে register করে।
+    Format:
+      ACCOUNT_2_LABEL=work
+      ACCOUNT_2_USERNAME=work@example.com
+      ACCOUNT_2_PASSWORD=workpass
+    """
+    for i in range(2, 2 + MAX_EXTRA_ACCOUNTS):
+        label    = config.get(f"ACCOUNT_{i}_LABEL")
+        username = config.get(f"ACCOUNT_{i}_USERNAME")
+        password = config.get(f"ACCOUNT_{i}_PASSWORD")
+        if label and username and password:
+            register_account(
+                label=label, username=username, password=password,
+                enabled=True, priority=i,
+            )
+            logger.info("👤 Loaded account from .env: [%s] %s", label, username)
+
+
+async def run_multi_account_task():
+    """
+    Multiple LinkedIn accounts-এ simultaneously birthday detection
+    এবং reply চালায়। Primary account সহ সব enabled accounts cover হয়।
+    """
+    logger.info("=== Multi-Account Run === [DRY RUN: %s]", DRY_RUN)
+
+    accounts = get_enabled_accounts()
+    if not accounts:
+        logger.warning(
+            "⚠️ No extra accounts registered. "
+            "Add ACCOUNT_2_LABEL / USERNAME / PASSWORD in .env"
+        )
+        return
+
+    logger.info("👥 %d account(s) enabled for multi-account run.", len(accounts))
+
+    # Birthday detection across all accounts (parallel)
+    detection_results = await run_multi_account_birthday_detection(
+        llm               = llm,
+        dry_run           = DRY_RUN,
+        wish_templates    = BIRTHDAY_WISH_TEMPLATES,
+        filter_notice_fn  = filter_notice,
+        wish_detection_rules = WISH_DETECTION_RULES,
+    )
+
+    success = [r for r in detection_results if r.get("status") == "success"]
+    failed  = [r for r in detection_results if r.get("status") == "failed"]
+    logger.info("🎂 Birthday detection: %d success | %d failed",
+                len(success), len(failed))
+
+    # Reply across all accounts (parallel)
+    reply_results = await run_multi_account_reply(
+        llm               = llm,
+        dry_run           = DRY_RUN,
+        reply_templates   = PERSONALIZED_REPLY_TEMPLATES,
+        wish_detection_rules = WISH_DETECTION_RULES,
+        filter_notice_fn  = filter_notice,
+    )
+
+    success = [r for r in reply_results if r.get("status") == "success"]
+    failed  = [r for r in reply_results if r.get("status") == "failed"]
+    logger.info("💬 Reply task: %d success | %d failed",
+                len(success), len(failed))
+
+    # Account stats summary
+    stats = get_account_stats()
+    for s in stats:
+        logger.info(
+            "📊 [%s] %s | total actions: %d | last run: %s",
+            s["label"], s["username"], s["total_actions"], s["last_run"] or "never",
+        )
+
+    send_summary("Multi-Account Run", [], 0, DRY_RUN)
+
+
+# ──────────────────────────────────────────────
+# 14. DAILY JOB
 # ──────────────────────────────────────────────
 async def daily_job():
     logger.info("⏰ Daily job started.")
@@ -771,8 +1067,22 @@ async def daily_job():
         if OCCASION_DETECTION_ENABLED:
             await run_occasion_detection_task()
 
+        if DM_CAMPAIGN_ENABLED:
+            await run_dm_campaign_task()
+
+        if MULTI_ACCOUNT_ENABLED:
+            await run_multi_account_task()
+
+        # Weekly tasks
+        if CONTACT_CATEGORIZER_ENABLED:
+            if date.today().strftime("%A") == "Sunday":
+                await run_categorizer_task()
+
+        if EMAIL_DIGEST_ENABLED:
+            if date.today().strftime("%A").lower() == DIGEST_DAY.lower():
+                await run_email_digest_task()
+
         if HEALTH_REPORT_ENABLED:
-            from datetime import date
             if date.today().strftime("%A").lower() == HEALTH_REPORT_DAY.lower():
                 await run_health_report_task()
 
@@ -821,8 +1131,25 @@ async def main():
     init_tracker_table()
     init_auto_reply_table()
     init_health_table()
+    init_activity_table()
+    init_campaign_table()
+    init_categorizer_table()
+    init_ab_table()
+    init_personality_table()
+    init_predicted_birthday_table()
+    init_eq_table()
+    init_accounts_table()           # ← Multi-Account DB init
+
+    if RAG_MEMORY_ENABLED:
+        init_rag_memory()
+        migrate_from_sqlite_memory()
     if CONNECTION_TRACKER_ENABLED:
         sync_from_history()
+
+    # .env থেকে extra accounts load করো
+    if MULTI_ACCOUNT_ENABLED:
+        _load_extra_accounts_from_env()
+
     try:
         # Run a single task immediately (uncomment to use):
         # await run_github_task()
@@ -844,6 +1171,18 @@ async def main():
         # await run_health_report_task()
 
         # Run ALL platforms on daily schedule:
+        # await run_email_digest_task()
+        # await run_best_time_task()
+        # await run_dm_campaign_task()
+        # await run_categorizer_task()
+        # await run_personality_task()
+        # await run_rag_wish_task()
+        # await run_voice_to_text_reply_task()
+        # await run_personality_profiling_task()
+        # await run_predictive_birthday_task()
+        # await run_eq_scoring_task()
+        # await run_multi_account_task()          # ← Multi-Account (standalone)
+
         await run_scheduler()
 
     finally:
