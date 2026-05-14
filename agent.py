@@ -208,7 +208,66 @@ if not USERNAME or not PASSWORD:
 
 
 # ──────────────────────────────────────────────
-# 3. SQLITE LOGGING
+# 3. AI MODEL SELECTOR  🆕
+# ──────────────────────────────────────────────
+# Set AI_MODEL in your .env file:
+#   AI_MODEL=gemini       → Google Gemini 2.5 Pro  (default)
+#   AI_MODEL=gpt-4o       → OpenAI GPT-4o
+#
+# You must also set the matching API key:
+#   GOOGLE_API_KEY=...    (for gemini)
+#   OPENAI_API_KEY=...    (for gpt-4o)
+
+AI_MODEL = config.get("AI_MODEL", "gemini").strip().lower()
+
+SUPPORTED_MODELS = {
+    "gemini":  "Google Gemini 2.5 Pro",
+    "gpt-4o":  "OpenAI GPT-4o",
+}
+
+if AI_MODEL not in SUPPORTED_MODELS:
+    logger.warning(
+        "⚠️  Unknown AI_MODEL '%s'. Falling back to 'gemini'. "
+        "Supported: %s",
+        AI_MODEL, list(SUPPORTED_MODELS.keys())
+    )
+    AI_MODEL = "gemini"
+
+logger.info("🤖 AI Model: %s (%s)", AI_MODEL, SUPPORTED_MODELS[AI_MODEL])
+
+
+def _build_llm():
+    """Build LLM based on AI_MODEL from .env"""
+    if AI_MODEL == "gpt-4o":
+        api_key = config.get("OPENAI_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "❌ OPENAI_API_KEY missing in .env — required for AI_MODEL=gpt-4o"
+            )
+        logger.info("🔑 Using OpenAI API key.")
+        return ChatOpenAI(
+            model="gpt-4o",
+            api_key=api_key,
+        )
+    else:
+        # Default: Gemini 2.5 Pro
+        api_key = config.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "❌ GOOGLE_API_KEY missing in .env — required for AI_MODEL=gemini"
+            )
+        logger.info("🔑 Using Google API key.")
+        return ChatGoogleGenerativeAI(
+            model="models/gemini-2.5-pro-preview-05-06",
+            google_api_key=api_key,
+        )
+
+
+llm = _build_llm()
+
+
+# ──────────────────────────────────────────────
+# 4. SQLITE LOGGING
 # ──────────────────────────────────────────────
 DB_FILE = Path("agent_history.db")
 
@@ -256,7 +315,7 @@ def get_recent_contacts(task: str, days: int) -> set[str]:
 
 
 # ──────────────────────────────────────────────
-# 4. WHITELIST / BLACKLIST / COOLDOWN HELPERS
+# 5. WHITELIST / BLACKLIST / COOLDOWN HELPERS
 # ──────────────────────────────────────────────
 def is_allowed(name: str) -> bool:
     name_lower = name.lower()
@@ -281,6 +340,7 @@ def filter_notice(task: str) -> str:
 
 
 # ──────────────────────────────────────────────
+# 6. SESSION MANAGEMENT
 # 5. SESSION MANAGEMENT (primary account)
 # ──────────────────────────────────────────────
 SESSION_FILE          = Path("linkedin_session.json")
@@ -316,6 +376,7 @@ def save_session_timestamp():
 
 
 # ──────────────────────────────────────────────
+# 7. BROWSER
 # 6. BROWSER (primary account)
 # ──────────────────────────────────────────────
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
@@ -323,13 +384,6 @@ BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 browser = Browser(
     config=BrowserConfig(user_data_dir=BROWSER_PROFILE_DIR)
 )
-
-
-# ──────────────────────────────────────────────
-# 7. LLM
-# ──────────────────────────────────────────────
-# llm = ChatOpenAI(model="gpt-4o")
-llm = ChatGoogleGenerativeAI(model="models/gemini-2.5-flash-preview-04-17")
 
 
 # ──────────────────────────────────────────────
@@ -807,6 +861,7 @@ async def run_birthday_reminder_task():
 async def run_post_engagement_task():
     logger.info("=== LinkedIn Post Engagement === [DRY RUN: %s | MODE: %s]",
                 DRY_RUN, ENGAGEMENT_MODE)
+
     sample_contacts = [
         {"name": "Birthday Contact", "profile_url": "", "relationship": "colleague"}
     ]
@@ -1114,6 +1169,8 @@ async def main():
         # await run_auto_reply_task()
         # await run_occasion_detection_task()
         # await run_health_report_task()
+
+        # Run ALL platforms on daily schedule:
         # await run_email_digest_task()
         # await run_best_time_task()
         # await run_dm_campaign_task()
