@@ -82,9 +82,9 @@ from multi_account import (
     run_multi_account_reply,
 )
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 1. LOGGING SETUP
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -96,9 +96,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 2. CONFIG & CREDENTIALS
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 config = dotenv_values(".env")
 
 USERNAME   = config.get("USERNAME")
@@ -114,37 +114,37 @@ WHITELIST: list[str] = []
 BLACKLIST: list[str] = []
 COOLDOWN_DAYS = 30
 
-# ── PLATFORM TOGGLES ─────────────────────────
+# -- PLATFORM TOGGLES -------------------------
 ENABLE_LINKEDIN  = True
 ENABLE_WHATSAPP  = True
 ENABLE_FACEBOOK  = True
 ENABLE_INSTAGRAM = True
 
-# ── VOICE MESSAGE SETTINGS ────────────────────
+# -- VOICE MESSAGE SETTINGS --------------------
 VOICE_ENABLED        = True
 VOICE_ENGINE         = "gtts"
 TRANSCRIPTION_ENGINE = "google"
 
-# ── SENTIMENT ANALYSIS ────────────────────────
+# -- SENTIMENT ANALYSIS ------------------------
 SENTIMENT_ANALYSIS_ENABLED = True
 
-# ── AUTO-CONNECT ──────────────────────────────
+# -- AUTO-CONNECT ------------------------------
 AUTO_CONNECT_ENABLED = True
 MAX_CONNECTS_PER_DAY = 10
 
-# ── PERSONALITY PROFILING ─────────────────────
+# -- PERSONALITY PROFILING ---------------------
 PERSONALITY_PROFILING_ENABLED = True
 
-# ── PREDICTIVE BIRTHDAY ───────────────────────
+# -- PREDICTIVE BIRTHDAY -----------------------
 PREDICTIVE_BIRTHDAY_ENABLED = True
 MAX_BIRTHDAY_PREDICTIONS    = 20
 PREDICTION_MIN_CONFIDENCE   = "medium"
 
-# ── EMOTIONAL INTELLIGENCE ────────────────────
+# -- EMOTIONAL INTELLIGENCE --------------------
 EQ_SCORING_ENABLED     = True
 EQ_MIN_SCORE_THRESHOLD = 70
 
-# ── MULTI-ACCOUNT ─────────────────────────────
+# -- MULTI-ACCOUNT -----------------------------
 MULTI_ACCOUNT_ENABLED = True
 # .env থেকে additional accounts load হবে:
 #   ACCOUNT_2_LABEL=work
@@ -156,50 +156,50 @@ MULTI_ACCOUNT_ENABLED = True
 # Maximum 10 accounts supported (ACCOUNT_2 … ACCOUNT_10)
 MAX_EXTRA_ACCOUNTS = 9
 
-# ── CONNECTION TRACKER ────────────────────────
+# -- CONNECTION TRACKER ------------------------
 CONNECTION_TRACKER_ENABLED = True
 
-# ── MEMORY ────────────────────────────────────
+# -- MEMORY ------------------------------------
 MEMORY_ENABLED     = True
 RAG_MEMORY_ENABLED = False
 
-# ── POST ENGAGEMENT ───────────────────────────
+# -- POST ENGAGEMENT ---------------------------
 POST_ENGAGEMENT_ENABLED = True
 ENGAGEMENT_MODE         = "like_and_comment"
 MAX_ENGAGEMENTS_PER_DAY = 10
 
-# ── BIRTHDAY REMINDER ─────────────────────────
+# -- BIRTHDAY REMINDER -------------------------
 BIRTHDAY_REMINDER_ENABLED = True
 
-# ── GROUP BIRTHDAY ────────────────────────────
+# -- GROUP BIRTHDAY ----------------------------
 GROUP_BIRTHDAY_ENABLED = True
 MAX_GROUP_ENGAGEMENTS  = 10
 GROUP_COMMENT_ENABLED  = True
 GROUP_DM_ENABLED       = True
 
-# ── AUTO REPLY FOLLOWUP ───────────────────────
+# -- AUTO REPLY FOLLOWUP -----------------------
 AUTO_REPLY_FOLLOWUP_ENABLED = True
 MAX_AUTO_REPLIES_PER_DAY    = 10
 
-# ── OCCASION DETECTION ────────────────────────
+# -- OCCASION DETECTION ------------------------
 OCCASION_DETECTION_ENABLED = True
 
-# ── DM CAMPAIGN ───────────────────────────────
+# -- DM CAMPAIGN -------------------------------
 DM_CAMPAIGN_ENABLED = False
 CAMPAIGN_TYPE       = "new_connections"
 MAX_DM_PER_DAY      = 10
 DM_COOLDOWN_DAYS    = 30
 CAMPAIGN_VARIANT    = "A"
 
-# ── CONTACT CATEGORIZER ───────────────────────
+# -- CONTACT CATEGORIZER -----------------------
 CONTACT_CATEGORIZER_ENABLED = True
 CATEGORIZER_MAX_CONTACTS    = 50
 
-# ── EMAIL DIGEST ──────────────────────────────
+# -- EMAIL DIGEST ------------------------------
 EMAIL_DIGEST_ENABLED = True
 DIGEST_DAY           = "monday"
 
-# ── HEALTH REPORT ─────────────────────────────
+# -- HEALTH REPORT -----------------------------
 HEALTH_REPORT_ENABLED = True
 HEALTH_REPORT_DAY     = "monday"
 
@@ -207,12 +207,12 @@ if not USERNAME or not PASSWORD:
     raise EnvironmentError("❌ USERNAME or PASSWORD missing in .env")
 
 
-# ──────────────────────────────────────────────
-# 3. AI MODEL SELECTOR  🆕
-# ──────────────────────────────────────────────
+# ----------------------------------------------
+# 3. AI MODEL SELECTOR  
+# ----------------------------------------------
 # Set AI_MODEL in your .env file:
-#   AI_MODEL=gemini       → Google Gemini 2.5 Pro  (default)
-#   AI_MODEL=gpt-4o       → OpenAI GPT-4o
+#   AI_MODEL=gemini       -> Google Gemini 2.5 Pro  (default)
+#   AI_MODEL=gpt-4o       -> OpenAI GPT-4o
 #
 # You must also set the matching API key:
 #   GOOGLE_API_KEY=...    (for gemini)
@@ -242,7 +242,7 @@ def _build_llm():
         api_key = config.get("OPENAI_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "❌ OPENAI_API_KEY missing in .env — required for AI_MODEL=gpt-4o"
+                "❌ OPENAI_API_KEY missing in .env - required for AI_MODEL=gpt-4o"
             )
         logger.info("🔑 Using OpenAI API key.")
         return ChatOpenAI(
@@ -254,7 +254,7 @@ def _build_llm():
         api_key = config.get("GOOGLE_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "❌ GOOGLE_API_KEY missing in .env — required for AI_MODEL=gemini"
+                "❌ GOOGLE_API_KEY missing in .env - required for AI_MODEL=gemini"
             )
         logger.info("🔑 Using Google API key.")
         return ChatGoogleGenerativeAI(
@@ -266,9 +266,9 @@ def _build_llm():
 llm = _build_llm()
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 4. SQLITE LOGGING
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 DB_FILE = Path("agent_history.db")
 
 
@@ -298,7 +298,7 @@ def log_action(task: str, contact: str, message: str, dry_run: bool):
              int(dry_run), datetime.now().isoformat()),
         )
         conn.commit()
-    logger.info("🗄️  Logged: [%s] → %s", task, contact)
+    logger.info("🗄️  Logged: [%s] -> %s", task, contact)
 
 
 def get_recent_contacts(task: str, days: int) -> set[str]:
@@ -314,9 +314,9 @@ def get_recent_contacts(task: str, days: int) -> set[str]:
     return {row[0] for row in rows}
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 5. WHITELIST / BLACKLIST / COOLDOWN HELPERS
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 def is_allowed(name: str) -> bool:
     name_lower = name.lower()
     if BLACKLIST and name_lower in [b.lower() for b in BLACKLIST]:
@@ -333,13 +333,13 @@ def filter_notice(task: str) -> str:
     blacklist_str = ", ".join(BLACKLIST) if BLACKLIST else "None"
     return f"""
   CONTACT FILTERS (follow strictly):
-  🚫 BLACKLIST — always skip: {blacklist_str}
-  ✅ WHITELIST — only process: {whitelist_str}
-  ❄️  COOLDOWN  — skip (contacted in last {COOLDOWN_DAYS} days): {cooldown_str}
+  🚫 BLACKLIST - always skip: {blacklist_str}
+  ✅ WHITELIST - only process: {whitelist_str}
+  ❄️  COOLDOWN  - skip (contacted in last {COOLDOWN_DAYS} days): {cooldown_str}
 """
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 6. SESSION MANAGEMENT
 <<<<<<< HEAD
 # 5. SESSION MANAGEMENT (primary account)
@@ -348,8 +348,8 @@ def filter_notice(task: str) -> str:
 =======
 # 5. SESSION MANAGEMENT (primary account)
 >>>>>>> Stashed changes
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
-# ──────────────────────────────────────────────
+>>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning - 5 styles + decay weighting)
+# ----------------------------------------------
 SESSION_FILE          = Path("linkedin_session.json")
 SESSION_MAX_AGE_HOURS = 12
 
@@ -382,7 +382,7 @@ def save_session_timestamp():
     logger.info("💾 Session saved.")
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 7. BROWSER
 <<<<<<< HEAD
 # 6. BROWSER (primary account)
@@ -391,8 +391,8 @@ def save_session_timestamp():
 =======
 # 6. BROWSER (primary account)
 >>>>>>> Stashed changes
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
-# ──────────────────────────────────────────────
+>>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning - 5 styles + decay weighting)
+# ----------------------------------------------
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 
 browser = Browser(
@@ -400,9 +400,9 @@ browser = Browser(
 )
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 8. TEMPLATES
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 PERSONALIZED_REPLY_TEMPLATES = [
     "Thanks so much, {name}! Really means a lot 😊",
     "Appreciate it, {name}! Thank you for thinking of me 🙏",
@@ -420,11 +420,11 @@ BIRTHDAY_WISH_TEMPLATES = [
 ]
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 9. SHARED DETECTION RULES
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 WISH_DETECTION_RULES = """
-  A message IS a birthday wish if it contains ANY of the following —
+  A message IS a birthday wish if it contains ANY of the following -
 
   ✅ Direct English: "Happy birthday", "HBD", "Happy bday", "Many happy returns",
      "Wishing you a wonderful birthday", "Congrats on your special day",
@@ -447,13 +447,13 @@ WISH_DETECTION_RULES = """
   ❌ NOT a birthday wish: job offers, "Hi/Hello", business messages,
      group announcements, replies to your own message.
 
-  When in doubt → SKIP.
+  When in doubt -> SKIP.
 """
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 10. DRY RUN NOTICE
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 def dry_run_notice() -> str:
     if DRY_RUN:
         return """
@@ -466,9 +466,9 @@ def dry_run_notice() -> str:
     return ""
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 11. LINKEDIN TASK BUILDERS
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 def build_linkedin_reply_task(already_logged_in: bool) -> str:
     login = (
         "You are already logged into LinkedIn. Skip login."
@@ -487,12 +487,12 @@ def build_linkedin_reply_task(already_logged_in: bool) -> str:
   Check up to 15 UNREAD threads.
 
   For each thread:
-    STEP 1 — Get sender's FIRST NAME.
-    STEP 2 — Apply filters (blacklist, whitelist, cooldown).
-    STEP 3 — Detect birthday wish: {WISH_DETECTION_RULES}
-    STEP 4 — If yes → choose ONE template randomly, fill {{name}}, send:
+    STEP 1 - Get sender's FIRST NAME.
+    STEP 2 - Apply filters (blacklist, whitelist, cooldown).
+    STEP 3 - Detect birthday wish: {WISH_DETECTION_RULES}
+    STEP 4 - If yes -> choose ONE template randomly, fill {{name}}, send:
 {templates_str}
-    If no → skip.
+    If no -> skip.
 
   Summary at the end: replied to (names), skipped (count+reason).
 """
@@ -526,9 +526,9 @@ def build_birthday_detection_task(already_logged_in: bool) -> str:
 """
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 12. RETRY HELPER
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: int = 5):
     for attempt in range(1, retries + 1):
         try:
@@ -545,9 +545,9 @@ async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: 
                 raise
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 13. TASK RUNNERS
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 task_github = f"Open browser, go to {GITHUB_URL} and tell me how many followers they have."
 
 
@@ -779,7 +779,7 @@ async def run_personality_task(contacts: list[dict] = None):
         )
         if profile:
             results.append({"contact": c.get("name"), "profile": profile})
-            logger.info("🎭 %s → %s (%s)",
+            logger.info("🎭 %s -> %s (%s)",
                         c.get("name"),
                         profile.get("mbti_type", "?"),
                         profile.get("communication_style", "?"))
@@ -899,7 +899,7 @@ async def run_personality_profiling_task(contacts: list[dict] = None):
         username=USERNAME, password=PASSWORD,
     )
     for r in results:
-        logger.info("🧠 %s → %s (%.0f%% confidence)",
+        logger.info("🧠 %s -> %s (%.0f%% confidence)",
                     r["contact"], r.get("communication_style"),
                     r.get("confidence", 0) * 100)
     return results
@@ -960,9 +960,9 @@ async def run_eq_scoring_task(reply_text: str = "", contact: str = "", context: 
     return result
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # MULTI-ACCOUNT TASK RUNNER
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 def _load_extra_accounts_from_env():
     """
     .env থেকে extra accounts load করে register করে।
@@ -1039,9 +1039,9 @@ async def run_multi_account_task():
     send_summary("Multi-Account Run", [], 0, DRY_RUN)
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 14. DAILY JOB
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 async def daily_job():
     logger.info("⏰ Daily job started.")
     try:
@@ -1119,9 +1119,9 @@ async def run_scheduler():
         logger.info("🛑 Scheduler stopped.")
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 15. CLEANUP
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 async def close_browser():
     try:
         await browser.close()
@@ -1130,9 +1130,9 @@ async def close_browser():
         logger.warning("⚠️  Browser close error: %s", e)
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # 16. ENTRYPOINT
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 async def main():
     init_db()
     init_followup_table()
