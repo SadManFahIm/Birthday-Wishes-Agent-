@@ -2,11 +2,24 @@
   "cSpell.words": [
     "Ahsan",
     "asyncio",
+    "cicd",
+    "cloudrun",
+    "Cooldown",
+    "DOCKERHUB",
     "dotenv",
+    "ELEVENLABS",
     "Faahim",
     "genai",
+    "gsutil",
+    "gtts",
     "langchain",
+    "MBTI",
+    "multilang",
+    "newbot",
     "Sadman",
-    "venv"
-  ]
+    "venv",
+    "এগুলো"
+  ],
+  "editor.fontFamily": "JetBrains",
+  "terminal.integrated.fontFamily": "monospace"
 }
