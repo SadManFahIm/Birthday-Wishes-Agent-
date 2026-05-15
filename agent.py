@@ -204,7 +204,7 @@ HEALTH_REPORT_ENABLED = True
 HEALTH_REPORT_DAY     = "monday"
 
 if not USERNAME or not PASSWORD:
-    raise EnvironmentError("❌ USERNAME or PASSWORD missing in .env")
+    raise EnvironmentError(" USERNAME or PASSWORD missing in .env")
 
 
 # ----------------------------------------------
@@ -227,7 +227,7 @@ SUPPORTED_MODELS = {
 
 if AI_MODEL not in SUPPORTED_MODELS:
     logger.warning(
-        "⚠️  Unknown AI_MODEL '%s'. Falling back to 'gemini'. "
+        "️  Unknown AI_MODEL '%s'. Falling back to 'gemini'. "
         "Supported: %s",
         AI_MODEL, list(SUPPORTED_MODELS.keys())
     )
@@ -242,7 +242,7 @@ def _build_llm():
         api_key = config.get("OPENAI_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "❌ OPENAI_API_KEY missing in .env - required for AI_MODEL=gpt-4o"
+                " OPENAI_API_KEY missing in .env - required for AI_MODEL=gpt-4o"
             )
         logger.info("🔑 Using OpenAI API key.")
         return ChatOpenAI(
@@ -254,7 +254,7 @@ def _build_llm():
         api_key = config.get("GOOGLE_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "❌ GOOGLE_API_KEY missing in .env - required for AI_MODEL=gemini"
+                " GOOGLE_API_KEY missing in .env - required for AI_MODEL=gemini"
             )
         logger.info("🔑 Using Google API key.")
         return ChatGoogleGenerativeAI(
@@ -334,21 +334,14 @@ def filter_notice(task: str) -> str:
     return f"""
   CONTACT FILTERS (follow strictly):
   🚫 BLACKLIST - always skip: {blacklist_str}
-  ✅ WHITELIST - only process: {whitelist_str}
+   WHITELIST - only process: {whitelist_str}
   ❄️  COOLDOWN  - skip (contacted in last {COOLDOWN_DAYS} days): {cooldown_str}
 """
 
 
 # ----------------------------------------------
 # 6. SESSION MANAGEMENT
-<<<<<<< HEAD
 # 5. SESSION MANAGEMENT (primary account)
-=======
-<<<<<<< Updated upstream
-=======
-# 5. SESSION MANAGEMENT (primary account)
->>>>>>> Stashed changes
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning - 5 styles + decay weighting)
 # ----------------------------------------------
 SESSION_FILE          = Path("linkedin_session.json")
 SESSION_MAX_AGE_HOURS = 12
@@ -363,10 +356,10 @@ def session_is_valid() -> bool:
         if age_hours > SESSION_MAX_AGE_HOURS:
             logger.info("⏰ Session expired. Will re-login.")
             return False
-        logger.info("✅ Valid session (%.1f h old).", age_hours)
+        logger.info(" Valid session (%.1f h old).", age_hours)
         return True
     except Exception as e:
-        logger.warning("⚠️  Session read error: %s", e)
+        logger.warning("️  Session read error: %s", e)
         return False
 
 
@@ -384,14 +377,7 @@ def save_session_timestamp():
 
 # ----------------------------------------------
 # 7. BROWSER
-<<<<<<< HEAD
 # 6. BROWSER (primary account)
-=======
-<<<<<<< Updated upstream
-=======
-# 6. BROWSER (primary account)
->>>>>>> Stashed changes
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning - 5 styles + decay weighting)
 # ----------------------------------------------
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 
@@ -426,25 +412,25 @@ BIRTHDAY_WISH_TEMPLATES = [
 WISH_DETECTION_RULES = """
   A message IS a birthday wish if it contains ANY of the following -
 
-  ✅ Direct English: "Happy birthday", "HBD", "Happy bday", "Many happy returns",
+   Direct English: "Happy birthday", "HBD", "Happy bday", "Many happy returns",
      "Wishing you a wonderful birthday", "Congrats on your special day",
      "Hope you have a great day", "Birthday greetings"
 
-  ✅ Indirect English: "Another year older", "Another trip around the sun",
+   Indirect English: "Another year older", "Another trip around the sun",
      "Hope your day is as special as you are", "Celebrate you today",
      "May this year bring you", "Here's to another year"
 
-  ✅ Bengali:    "শুভ জন্মদিন", "জন্মদিনের শুভেচ্ছা", "অনেক শুভকামনা"
-  ✅ Arabic:     "عيد ميلاد سعيد", "كل عام وأنت بخير"
-  ✅ Hindi:      "जन्मदिन मुबारक", "जन्मदिन की शुभकामनाएं"
-  ✅ Spanish:    "Feliz cumpleaños", "Feliz cumple"
-  ✅ French:     "Joyeux anniversaire"
-  ✅ German:     "Alles Gute zum Geburtstag"
-  ✅ Turkish:    "İyi ki doğdun"
-  ✅ Indonesian: "Selamat ulang tahun", "Met ultah"
-  ✅ Emoji:      🎂 🎉 🎈 🥳 🎁 (combined with name or greeting)
+   Bengali:    "শুভ জন্মদিন", "জন্মদিনের শুভেচ্ছা", "অনেক শুভকামনা"
+   Arabic:     "عيد ميلاد سعيد", "كل عام وأنت بخير"
+   Hindi:      "जन्मदिन मुबारक", "जन्मदिन की शुभकामनाएं"
+   Spanish:    "Feliz cumpleaños", "Feliz cumple"
+   French:     "Joyeux anniversaire"
+   German:     "Alles Gute zum Geburtstag"
+   Turkish:    "İyi ki doğdun"
+   Indonesian: "Selamat ulang tahun", "Met ultah"
+   Emoji:      🎂 🎉 🎈 🥳 🎁 (combined with name or greeting)
 
-  ❌ NOT a birthday wish: job offers, "Hi/Hello", business messages,
+   NOT a birthday wish: job offers, "Hi/Hello", business messages,
      group announcements, replies to your own message.
 
   When in doubt -> SKIP.
@@ -457,7 +443,7 @@ WISH_DETECTION_RULES = """
 def dry_run_notice() -> str:
     if DRY_RUN:
         return """
-  ⚠️  DRY RUN MODE IS ON ⚠️
+  ️  DRY RUN MODE IS ON ️
   Do NOT send any messages.
   For each message you WOULD send, print:
     [DRY RUN] Would send to <n>: "<message>"
@@ -534,10 +520,10 @@ async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: 
         try:
             logger.info("🚀 [%s] Attempt %d/%d", task_name, attempt, retries)
             result = await coro_factory()
-            logger.info("✅ [%s] Done.", task_name)
+            logger.info(" [%s] Done.", task_name)
             return result
         except Exception as e:
-            logger.error("❌ [%s] Attempt %d failed: %s", task_name, attempt, e)
+            logger.error(" [%s] Attempt %d failed: %s", task_name, attempt, e)
             if attempt < retries:
                 await asyncio.sleep(delay)
             else:
@@ -669,7 +655,7 @@ async def run_calendar_export():
         password=PASSWORD, already_logged_in=session_is_valid(),
     )
     if path:
-        logger.info("✅ Calendar exported to: %s", path)
+        logger.info(" Calendar exported to: %s", path)
     return path
 
 
@@ -993,7 +979,7 @@ async def run_multi_account_task():
     accounts = get_enabled_accounts()
     if not accounts:
         logger.warning(
-            "⚠️ No extra accounts registered. "
+            "️ No extra accounts registered. "
             "Add ACCOUNT_2_LABEL / USERNAME / PASSWORD in .env"
         )
         return
@@ -1101,7 +1087,7 @@ async def daily_job():
                 await run_health_report_task()
 
     except Exception as e:
-        logger.error("❌ Daily job error: %s", e)
+        logger.error(" Daily job error: %s", e)
 
 
 async def run_scheduler():
@@ -1127,7 +1113,7 @@ async def close_browser():
         await browser.close()
         logger.info("🔒 Browser closed.")
     except Exception as e:
-        logger.warning("⚠️  Browser close error: %s", e)
+        logger.warning("️  Browser close error: %s", e)
 
 
 # ----------------------------------------------
@@ -1183,22 +1169,6 @@ async def main():
         # await run_auto_reply_task()
         # await run_occasion_detection_task()
         # await run_health_report_task()
-<<<<<<< Updated upstream
-=======
-
-        # Run ALL platforms on daily schedule:
-        # await run_email_digest_task()
-        # await run_best_time_task()
-        # await run_dm_campaign_task()
-        # await run_categorizer_task()
-        # await run_personality_task()
-        # await run_rag_wish_task()
-        # await run_voice_to_text_reply_task()
-        # await run_personality_profiling_task()
-        # await run_predictive_birthday_task()
-        # await run_eq_scoring_task()
-        # await run_multi_account_task()          # ← Multi-Account (standalone)
->>>>>>> Stashed changes
 
         # Run ALL platforms on daily schedule:
         # await run_email_digest_task()
