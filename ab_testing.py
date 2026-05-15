@@ -1,45 +1,7 @@
 """
 ab_testing.py
-─────────────
-<<<<<<< HEAD
-Wish A/B Testing module for Birthday Wishes Agent.
-
-Generates two different wish styles (Variant A and Variant B),
-sends each to different contacts, tracks which one gets more replies,
-and automatically uses the winning variant going forward.
-
-How it works:
-  1. For each birthday contact, randomly assigns Variant A or B
-  2. Variant A: Warm and personal style
-     Variant B: Enthusiastic and fun style
-  3. Tracks if the contact replied to the wish
-  4. After enough data, determines the winning variant
-  5. Agent automatically uses the winner for future wishes
-
-Metrics tracked:
-  - Send count per variant
-  - Reply count per variant
-  - Reply rate per variant
-  - Win/loss determination
-
-Usage:
-    from ab_testing import (
-        get_ab_variant,
-        log_ab_send,
-        log_ab_reply,
-        get_ab_results,
-        get_winning_variant
-    )
-"""
-
-import json
-import logging
-import sqlite3
-from datetime import date, datetime
-from pathlib import Path
-import random
-=======
-Wish A/B Testing with Auto-Learning — Birthday Wishes Agent 🆕
+-------------
+Wish A/B Testing with Auto-Learning - Birthday Wishes Agent 
 
 Upgraded from 2-variant (A/B) to 5-style testing with full auto-learning.
 
@@ -59,13 +21,13 @@ Backward compatible:
   - All original functions still work exactly as before
   - New style keys: "A", "B", "C", "D", "E"
 
-New additions (🆕):
-  - get_best_style()           → best style key via decay-weighted reply rate
-  - get_all_style_stats()      → full stats for all 5 styles
-  - log_ab_reply_by_style()    → mark reply for a specific style key
-  - get_full_ab_report()       → human-readable report for dashboard / digest
-  - build_ab_instructions()    → updated to show 5-style status
-  - generate_ab_wish()         → supports all 5 style keys (A–E)
+New additions ():
+  - get_best_style()           -> best style key via decay-weighted reply rate
+  - get_all_style_stats()      -> full stats for all 5 styles
+  - log_ab_reply_by_style()    -> mark reply for a specific style key
+  - get_full_ab_report()       -> human-readable report for dashboard / digest
+  - build_ab_instructions()    -> updated to show 5-style status
+  - generate_ab_wish()         -> supports all 5 style keys (A-E)
 """
 
 import logging
@@ -73,34 +35,23 @@ import random
 import sqlite3
 from datetime import date, datetime
 from pathlib import Path
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 
 logger  = logging.getLogger(__name__)
 DB_FILE = Path("agent_history.db")
 
-<<<<<<< HEAD
-# Minimum sends before declaring a winner
-MIN_SENDS_FOR_WINNER = 20
-
-
-# ──────────────────────────────────────────────
-# VARIANT DEFINITIONS
-# ──────────────────────────────────────────────
-=======
 # Minimum sends per style before auto-learning activates
 MIN_SENDS_FOR_WINNER = 20
 
-# Decay weighting: sends in last RECENT_DAYS_WINDOW days count RECENT_WEIGHT× more
+# Decay weighting: sends in last RECENT_DAYS_WINDOW days count RECENT_WEIGHTx more
 RECENT_DAYS_WINDOW = 30
 RECENT_WEIGHT      = 2.0
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # STYLE DEFINITIONS
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 
-# Original 2 variants — kept for backward compatibility
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
+# Original 2 variants - kept for backward compatibility
 AB_VARIANTS = {
     "A": {
         "name":        "Warm & Personal",
@@ -115,12 +66,10 @@ AB_VARIANTS = {
         "description": "Upbeat, energetic, celebratory tone",
         "style":       "enthusiastic, fun, celebratory, 1-2 sentences, 2-3 emoji",
         "example":     "Happy Birthday Rahul!! 🎉🥳 Hope today is absolutely "
-                       "AMAZING — you deserve all the celebrations! 🎂",
+                       "AMAZING - you deserve all the celebrations! 🎂",
     },
 }
 
-<<<<<<< HEAD
-=======
 # Extended 5-style definitions (A and B match AB_VARIANTS above)
 WISH_STYLES = {
     "A": {
@@ -136,7 +85,7 @@ WISH_STYLES = {
         "description": "Upbeat, energetic, celebratory tone",
         "style":       "enthusiastic, fun, celebratory, 1-2 sentences, 2-3 emoji",
         "example":     "Happy Birthday Rahul!! 🎉🥳 Hope today is absolutely "
-                       "AMAZING — you deserve all the celebrations! 🎂",
+                       "AMAZING - you deserve all the celebrations! 🎂",
     },
     "C": {
         "name":        "Professional",
@@ -147,10 +96,10 @@ WISH_STYLES = {
     },
     "D": {
         "name":        "Funny & Playful",
-        "description": "Light humour, witty, casual — best for close connections",
+        "description": "Light humour, witty, casual - best for close connections",
         "style":       "playful, witty, light humour, casual, 2-3 emoji",
         "example":     "Another trip around the sun, Rahul! 🌍🎂 "
-                       "You're getting better with age — like a fine app update! 😄",
+                       "You're getting better with age - like a fine app update! 😄",
     },
     "E": {
         "name":        "Inspirational",
@@ -162,19 +111,13 @@ WISH_STYLES = {
     },
 }
 
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # DB SETUP
-# ──────────────────────────────────────────────
-<<<<<<< HEAD
-def init_ab_table():
-    """Create the A/B testing tracking table."""
-=======
+# ----------------------------------------------
 
 def init_ab_table():
     """Create the A/B testing tracking table (backward compatible)."""
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ab_tests (
@@ -193,34 +136,19 @@ def init_ab_table():
     logger.info("🗄️  A/B testing table ready.")
 
 
-# ──────────────────────────────────────────────
-<<<<<<< HEAD
-# VARIANT ASSIGNMENT
-# ──────────────────────────────────────────────
-def get_ab_variant(contact: str) -> str:
-    """
-    Get the A/B variant for a contact.
-    Uses the winning variant if enough data exists,
-    otherwise assigns randomly for fair testing.
-
-    Returns:
-        "A" or "B"
-    """
-    winner = get_winning_variant()
-
-=======
-# AUTO-LEARNING — STYLE SELECTION  🆕
-# ──────────────────────────────────────────────
+# ----------------------------------------------
+# AUTO-LEARNING - STYLE SELECTION  
+# ----------------------------------------------
 
 def get_all_style_stats() -> dict:
     """
     Returns per-style stats with decay weighting.
 
-    Recent sends (last RECENT_DAYS_WINDOW days) count RECENT_WEIGHT×
-    more than older sends — so the agent adapts to recent trends.
+    Recent sends (last RECENT_DAYS_WINDOW days) count RECENT_WEIGHTx
+    more than older sends - so the agent adapts to recent trends.
 
     Returns:
-        Dict[style_key] → {sent, replies, weighted_sent,
+        Dict[style_key] -> {sent, replies, weighted_sent,
                            weighted_replies, reply_rate}
     """
     if not DB_FILE.exists():
@@ -267,10 +195,10 @@ def get_best_style() -> str:
     Auto-learning style picker.
 
     Exploration phase (any style < MIN_SENDS_FOR_WINNER sends):
-      → pick randomly so all styles get tested fairly.
+      -> pick randomly so all styles get tested fairly.
 
     Exploitation phase (all styles tested enough):
-      → pick the style with the highest weighted reply rate.
+      -> pick the style with the highest weighted reply rate.
 
     Returns: "A", "B", "C", "D", or "E"
     """
@@ -282,7 +210,7 @@ def get_best_style() -> str:
         if stats.get(key, {}).get("sent", 0) < MIN_SENDS_FOR_WINNER:
             chosen = random.choice(all_styles)
             logger.info(
-                "🎲 A/B Explore: Style '%s' only %d/%d sends. Random → %s (%s)",
+                "🎲 A/B Explore: Style '%s' only %d/%d sends. Random -> %s (%s)",
                 key, stats.get(key, {}).get("sent", 0), MIN_SENDS_FOR_WINNER,
                 chosen, WISH_STYLES[chosen]["name"],
             )
@@ -292,62 +220,40 @@ def get_best_style() -> str:
     best = max(all_styles, key=lambda k: stats.get(k, {}).get("reply_rate", 0.0))
     rate = stats.get(best, {}).get("reply_rate", 0.0)
     logger.info(
-        "🏆 A/B Auto-Learn: Best style → %s (%s) | Weighted reply rate: %.1f%%",
+        "🏆 A/B Auto-Learn: Best style -> %s (%s) | Weighted reply rate: %.1f%%",
         best, WISH_STYLES[best]["name"], rate * 100,
     )
     return best
 
 
-# ──────────────────────────────────────────────
-# ORIGINAL FUNCTIONS — BACKWARD COMPATIBLE
-# ──────────────────────────────────────────────
+# ----------------------------------------------
+# ORIGINAL FUNCTIONS - BACKWARD COMPATIBLE
+# ----------------------------------------------
 
 def get_ab_variant(contact: str) -> str:
     """
     Backward-compatible: returns "A" or "B".
-    Uses get_best_style() internally; maps C/D/E → A or B
+    Uses get_best_style() internally; maps C/D/E -> A or B
     so old callers still receive a valid variant.
     """
     winner = get_winning_variant()
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
     if winner:
         logger.info("🏆 Using winning variant %s for %s", winner, contact)
         return winner
 
-<<<<<<< HEAD
-    # Random assignment for fair testing
-    variant = random.choice(["A", "B"])
-    logger.info("🎲 Randomly assigned variant %s to %s", variant, contact)
-    return variant
-
-
-# ──────────────────────────────────────────────
-# LOGGING
-# ──────────────────────────────────────────────
-=======
     best   = get_best_style()
     mapped = best if best in ("A", "B") else random.choice(["A", "B"])
-    logger.info("🎲 A/B variant for %s → %s (best style: %s)", contact, mapped, best)
+    logger.info("🎲 A/B variant for %s -> %s (best style: %s)", contact, mapped, best)
     return mapped
 
 
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 def log_ab_send(
     contact: str,
     variant: str,
     wish_text: str,
     dry_run: bool = True,
 ) -> int:
-<<<<<<< HEAD
-    """
-    Log that a wish was sent with a specific variant.
-
-    Returns:
-        The ID of the new record.
-    """
-=======
-    """Log a sent wish. Accepts any style key A–E."""
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
+    """Log a sent wish. Accepts any style key A-E."""
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.execute(
             "INSERT INTO ab_tests "
@@ -359,37 +265,17 @@ def log_ab_send(
         )
         record_id = cursor.lastrowid
         conn.commit()
-<<<<<<< HEAD
-    logger.info("📊 A/B send logged: Variant %s → %s (ID: %d)",
-                variant, contact, record_id)
-=======
-    logger.info("📊 A/B logged: Style %s → %s (ID: %d)", variant, contact, record_id)
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
+    logger.info("📊 A/B logged: Style %s -> %s (ID: %d)", variant, contact, record_id)
     return record_id
 
 
 def log_ab_reply(contact: str, reply_text: str = ""):
-<<<<<<< HEAD
-    """
-    Log that a contact replied to our wish.
-    Marks the most recent send to this contact as replied.
-    """
-    with sqlite3.connect(DB_FILE) as conn:
-        conn.execute(
-            "UPDATE ab_tests SET replied = 1, reply_text = ? "
-            "WHERE LOWER(contact) = LOWER(?) AND replied = 0 AND dry_run = 0 "
-            "ORDER BY created_at DESC LIMIT 1",
-            (reply_text, contact),
-        )
-        conn.commit()
-    logger.info("💬 A/B reply logged for %s", contact)
-=======
     """Mark most recent wish to a contact as replied (backward compat)."""
     log_ab_reply_by_style(contact, reply_text=reply_text)
 
 
 def log_ab_reply_by_style(contact: str, style_key: str = "", reply_text: str = ""):
-    """🆕 Mark reply for a contact. Optionally filter by style_key."""
+    """ Mark reply for a contact. Optionally filter by style_key."""
     with sqlite3.connect(DB_FILE) as conn:
         if style_key:
             conn.execute("""
@@ -417,26 +303,16 @@ def log_ab_reply_by_style(contact: str, style_key: str = "", reply_text: str = "
             """, (reply_text, contact, contact))
         conn.commit()
     logger.info("💬 A/B reply marked: %s (style: %s)", contact, style_key or "any")
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 
 
-# ──────────────────────────────────────────────
+# ----------------------------------------------
 # RESULTS & ANALYTICS
-# ──────────────────────────────────────────────
-<<<<<<< HEAD
-def get_ab_results() -> dict:
-    """
-    Get full A/B test results with reply rates for each variant.
-
-    Returns:
-        Dict with stats for variant A, variant B, and winner.
-=======
+# ----------------------------------------------
 
 def get_ab_results() -> dict:
     """
     Backward-compatible A vs B results + winner.
     Also includes 'all_styles' key with extended 5-style stats.
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
     """
     if not DB_FILE.exists():
         return _empty_results()
@@ -444,66 +320,6 @@ def get_ab_results() -> dict:
     with sqlite3.connect(DB_FILE) as conn:
         rows = conn.execute(
             "SELECT variant, COUNT(*) as sends, SUM(replied) as replies "
-<<<<<<< HEAD
-            "FROM ab_tests WHERE dry_run = 0 "
-            "GROUP BY variant",
-        ).fetchall()
-
-    stats = {}
-    for row in rows:
-        variant = row[0]
-        sends   = row[1] or 0
-        replies = row[2] or 0
-        rate    = round((replies / sends * 100), 1) if sends > 0 else 0.0
-        stats[variant] = {
-            "variant":    variant,
-            "name":       AB_VARIANTS.get(variant, {}).get("name", variant),
-            "sends":      sends,
-            "replies":    replies,
-            "reply_rate": rate,
-        }
-
-    # Fill missing variants
-    for v in ["A", "B"]:
-        if v not in stats:
-            stats[v] = {
-                "variant":    v,
-                "name":       AB_VARIANTS[v]["name"],
-                "sends":      0,
-                "replies":    0,
-                "reply_rate": 0.0,
-            }
-
-    # Determine winner
-    winner = None
-    a_rate = stats.get("A", {}).get("reply_rate", 0)
-    b_rate = stats.get("B", {}).get("reply_rate", 0)
-    a_sends = stats.get("A", {}).get("sends", 0)
-    b_sends = stats.get("B", {}).get("sends", 0)
-
-    if a_sends >= MIN_SENDS_FOR_WINNER and b_sends >= MIN_SENDS_FOR_WINNER:
-        if a_rate > b_rate + 5:   # A wins by more than 5%
-            winner = "A"
-        elif b_rate > a_rate + 5: # B wins by more than 5%
-            winner = "B"
-        else:
-            winner = None  # Too close to call
-
-    logger.info(
-        "📊 A/B Results — A: %.1f%% (%d sends) | B: %.1f%% (%d sends) | Winner: %s",
-        a_rate, a_sends, b_rate, b_sends, winner or "Too close",
-    )
-
-    return {
-        "variant_a":        stats.get("A", {}),
-        "variant_b":        stats.get("B", {}),
-        "winner":           winner,
-        "total_sends":      a_sends + b_sends,
-        "min_for_winner":   MIN_SENDS_FOR_WINNER,
-        "test_concluded":   winner is not None,
-        "conclusion_note":  _get_conclusion_note(winner, a_rate, b_rate,
-                                                  a_sends, b_sends),
-=======
             "FROM ab_tests WHERE dry_run = 0 GROUP BY variant",
         ).fetchall()
 
@@ -543,8 +359,7 @@ def get_ab_results() -> dict:
         "min_for_winner": MIN_SENDS_FOR_WINNER,
         "test_concluded": winner is not None,
         "conclusion_note": _get_conclusion_note(winner, a_rate, b_rate, a_sends, b_sends),
-        "all_styles":     get_all_style_stats(),  # 🆕
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
+        "all_styles":     get_all_style_stats(),  # 
     }
 
 
@@ -558,52 +373,6 @@ def _empty_results() -> dict:
         "total_sends":    0,
         "min_for_winner": MIN_SENDS_FOR_WINNER,
         "test_concluded": False,
-<<<<<<< HEAD
-        "conclusion_note": f"Need at least {MIN_SENDS_FOR_WINNER} sends per variant to declare a winner.",
-    }
-
-
-def _get_conclusion_note(
-    winner: str | None,
-    a_rate: float,
-    b_rate: float,
-    a_sends: int,
-    b_sends: int,
-) -> str:
-    if winner == "A":
-        return (
-            f"✅ Variant A wins! '{AB_VARIANTS['A']['name']}' style gets "
-            f"{a_rate:.1f}% reply rate vs {b_rate:.1f}% for Variant B. "
-            f"Agent will now use Variant A for all wishes."
-        )
-    elif winner == "B":
-        return (
-            f"✅ Variant B wins! '{AB_VARIANTS['B']['name']}' style gets "
-            f"{b_rate:.1f}% reply rate vs {a_rate:.1f}% for Variant A. "
-            f"Agent will now use Variant B for all wishes."
-        )
-    elif a_sends >= MIN_SENDS_FOR_WINNER and b_sends >= MIN_SENDS_FOR_WINNER:
-        return (
-            f"🟡 Too close to call! A: {a_rate:.1f}% vs B: {b_rate:.1f}%. "
-            f"Continuing to test both variants equally."
-        )
-    else:
-        remaining = MIN_SENDS_FOR_WINNER - min(a_sends, b_sends)
-        return f"⏳ Still testing — need {remaining} more sends to declare a winner."
-
-
-def get_winning_variant() -> str | None:
-    """
-    Return the winning variant if test has concluded, else None.
-    Returns None if test is still running.
-    """
-    results = get_ab_results()
-    return results.get("winner")
-
-
-def get_recent_ab_sends(limit: int = 20) -> list[dict]:
-    """Get the most recent A/B test sends."""
-=======
         "conclusion_note": f"Need {MIN_SENDS_FOR_WINNER} sends per style to declare a winner.",
         "all_styles":     {},
     }
@@ -629,37 +398,21 @@ def get_winning_variant() -> str | None:
 
 def get_recent_ab_sends(limit: int = 20) -> list[dict]:
     """Get most recent A/B sends."""
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
     if not DB_FILE.exists():
         return []
     with sqlite3.connect(DB_FILE) as conn:
         rows = conn.execute(
             "SELECT contact, variant, wish_text, replied, date "
             "FROM ab_tests WHERE dry_run = 0 "
-<<<<<<< HEAD
-            "ORDER BY created_at DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
-    return [
-        {"contact": r[0], "variant": r[1], "wish_text": r[2],
-         "replied": bool(r[3]), "date": r[4]}
-        for r in rows
-    ]
-
-
-# ──────────────────────────────────────────────
-# WISH GENERATOR FOR A/B
-# ──────────────────────────────────────────────
-=======
             "ORDER BY created_at DESC LIMIT ?", (limit,),
         ).fetchall()
     return [{"contact": r[0], "variant": r[1], "wish_text": r[2],
              "replied": bool(r[3]), "date": r[4]} for r in rows]
 
 
-# ──────────────────────────────────────────────
-# FULL REPORT  🆕
-# ──────────────────────────────────────────────
+# ----------------------------------------------
+# FULL REPORT  
+# ----------------------------------------------
 
 def get_full_ab_report() -> str:
     """
@@ -668,14 +421,14 @@ def get_full_ab_report() -> str:
     """
     stats = get_all_style_stats()
     if not any(s["sent"] for s in stats.values()):
-        return "📊 No A/B data yet — send some wishes first!"
+        return "📊 No A/B data yet - send some wishes first!"
 
     best = get_best_style()
     lines = [
-        "📊 A/B Auto-Learning Report — Wish Style Performance",
-        "─" * 58,
+        "📊 A/B Auto-Learning Report - Wish Style Performance",
+        "-" * 58,
         f"  {'Key':<4} {'Style':<22} {'Sent':>5} {'Replies':>8} {'Rate':>8}  {'Weighted':>8}",
-        "  " + "─" * 54,
+        "  " + "-" * 54,
     ]
 
     sorted_keys = sorted(
@@ -695,19 +448,18 @@ def get_full_ab_report() -> str:
         )
 
     lines += [
-        "  " + "─" * 54,
-        f"  🏆 Best style now: {best} — {WISH_STYLES[best]['name']}",
-        f"  ⚖️  Sends in last {RECENT_DAYS_WINDOW} days weighted {RECENT_WEIGHT}× (adapts to trends).",
+        "  " + "-" * 54,
+        f"  🏆 Best style now: {best} - {WISH_STYLES[best]['name']}",
+        f"  ⚖️  Sends in last {RECENT_DAYS_WINDOW} days weighted {RECENT_WEIGHT}x (adapts to trends).",
         f"  🔬 Auto-learning activates after {MIN_SENDS_FOR_WINNER} sends per style.",
     ]
     return "\n".join(lines)
 
 
-# ──────────────────────────────────────────────
-# WISH GENERATOR — supports A–E  🆕
-# ──────────────────────────────────────────────
+# ----------------------------------------------
+# WISH GENERATOR - supports A-E  
+# ----------------------------------------------
 
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 async def generate_ab_wish(
     llm,
     name: str,
@@ -715,31 +467,7 @@ async def generate_ab_wish(
     variant: str,
 ) -> str:
     """
-<<<<<<< HEAD
-    Generate a wish in the style of the given variant.
-
-    Args:
-        llm          : LangChain LLM instance
-        name         : Contact's first name
-        profile_info : Profile details
-        variant      : "A" or "B"
-
-    Returns:
-        Generated wish string.
-    """
-    from langchain_core.messages import HumanMessage
-
-    v         = AB_VARIANTS.get(variant, AB_VARIANTS["A"])
-    style     = v["style"]
-    example   = v["example"]
-    job_title = profile_info.get("job_title", "")
-    company   = profile_info.get("company", "")
-
-    context = f"They work as {job_title} at {company}." if job_title and company \
-              else f"They work as {job_title}." if job_title \
-              else ""
-=======
-    Generate a wish in the style of the given variant (A–E).
+    Generate a wish in the style of the given variant (A-E).
     Falls back to Style A if unknown variant given.
     """
     from langchain_core.messages import HumanMessage
@@ -752,24 +480,10 @@ async def generate_ab_wish(
         else f"They work as {job_title}." if job_title
         else ""
     )
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 
     prompt = f"""
 Write a birthday wish for {name}.
 
-<<<<<<< HEAD
-Style: {style}
-{context}
-
-Example of this style:
-"{example}"
-
-Rules:
-  ✅ Start with "Happy Birthday {name}!"
-  ✅ Follow the style exactly
-  ✅ Keep it genuine and personal
-  ❌ Don't copy the example — write a fresh wish
-=======
 Style: {v['style']}
 {context}
 
@@ -778,60 +492,25 @@ Example of this style:
 
 Rules:
   ✅ Start with "Happy Birthday {name}!"
-  ✅ Match the style exactly — tone, length, emoji count
+  ✅ Match the style exactly - tone, length, emoji count
   ✅ Keep it genuine and personal
   ❌ Do not copy the example word for word
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 
 Reply with ONLY the wish text.
 """
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
-<<<<<<< HEAD
-        wish     = response.content.strip().strip('"').strip("'")
-        logger.info("✨ A/B Variant %s wish for %s: %s",
-                    variant, name, wish[:60] + "...")
-=======
         wish = response.content.strip().strip('"').strip("'")
         logger.info("✨ A/B Style %s wish for %s: %s", variant, name, wish[:60] + "...")
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
         return wish
     except Exception as e:
         logger.error("❌ A/B wish generation failed: %s", e)
         return f"Happy Birthday {name}! 🎂 Wishing you an amazing day!"
 
 
-# ──────────────────────────────────────────────
-<<<<<<< HEAD
-# AGENT INSTRUCTIONS
-# ──────────────────────────────────────────────
-def build_ab_instructions(variant: str) -> str:
-    """Build A/B testing instructions for the browser agent."""
-    v = AB_VARIANTS.get(variant, AB_VARIANTS["A"])
-    results = get_ab_results()
-
-    status_line = ""
-    if results["test_concluded"] and results["winner"]:
-        status_line = f"\n  🏆 TEST CONCLUDED: Variant {results['winner']} is the winner!"
-    else:
-        a_rate = results["variant_a"]["reply_rate"]
-        b_rate = results["variant_b"]["reply_rate"]
-        status_line = f"\n  📊 Current: A={a_rate:.1f}% reply rate | B={b_rate:.1f}% reply rate"
-
-    return f"""
-  A/B TESTING INSTRUCTIONS:
-  Using Variant {variant} — "{v['name']}"
-  Style: {v['style']}
-  {status_line}
-
-  Write all birthday wishes in this style:
-  Example: "{v['example']}"
-
-  After sending, note if they reply — this helps determine
-  which wish style gets more engagement.
-=======
-# AGENT INSTRUCTIONS  🆕
-# ──────────────────────────────────────────────
+# ----------------------------------------------
+# AGENT INSTRUCTIONS  
+# ----------------------------------------------
 
 def build_ab_instructions(variant: str = "") -> str:
     """
@@ -846,7 +525,7 @@ def build_ab_instructions(variant: str = "") -> str:
     stats   = get_all_style_stats()
 
     if results["test_concluded"] and results["winner"]:
-        status = (f"🏆 Winner: Style {results['winner']} — "
+        status = (f"🏆 Winner: Style {results['winner']} - "
                   f"{WISH_STYLES[results['winner']]['name']}")
     else:
         top3   = sorted(WISH_STYLES.keys(),
@@ -858,8 +537,8 @@ def build_ab_instructions(variant: str = "") -> str:
         )
 
     return f"""
-  A/B TESTING — AUTO-LEARNING WISH STYLE:
-  Using Style {variant} — "{v['name']}"
+  A/B TESTING - AUTO-LEARNING WISH STYLE:
+  Using Style {variant} - "{v['name']}"
   Guide: {v['style']}
   {status}
 
@@ -869,5 +548,4 @@ def build_ab_instructions(variant: str = "") -> str:
   After sending, report replies as:
     REPLIED: <contact_name>
   This trains the auto-learning system to improve over time.
->>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 """
