@@ -341,7 +341,14 @@ def filter_notice(task: str) -> str:
 
 # ──────────────────────────────────────────────
 # 6. SESSION MANAGEMENT
+<<<<<<< HEAD
 # 5. SESSION MANAGEMENT (primary account)
+=======
+<<<<<<< Updated upstream
+=======
+# 5. SESSION MANAGEMENT (primary account)
+>>>>>>> Stashed changes
+>>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 # ──────────────────────────────────────────────
 SESSION_FILE          = Path("linkedin_session.json")
 SESSION_MAX_AGE_HOURS = 12
@@ -377,7 +384,14 @@ def save_session_timestamp():
 
 # ──────────────────────────────────────────────
 # 7. BROWSER
+<<<<<<< HEAD
 # 6. BROWSER (primary account)
+=======
+<<<<<<< Updated upstream
+=======
+# 6. BROWSER (primary account)
+>>>>>>> Stashed changes
+>>>>>>> c6eea7e (feat: upgrade A/B testing with auto-learning — 5 styles + decay weighting)
 # ──────────────────────────────────────────────
 BROWSER_PROFILE_DIR = str(Path.cwd() / "browser_profile")
 
@@ -1169,6 +1183,22 @@ async def main():
         # await run_auto_reply_task()
         # await run_occasion_detection_task()
         # await run_health_report_task()
+<<<<<<< Updated upstream
+=======
+
+        # Run ALL platforms on daily schedule:
+        # await run_email_digest_task()
+        # await run_best_time_task()
+        # await run_dm_campaign_task()
+        # await run_categorizer_task()
+        # await run_personality_task()
+        # await run_rag_wish_task()
+        # await run_voice_to_text_reply_task()
+        # await run_personality_profiling_task()
+        # await run_predictive_birthday_task()
+        # await run_eq_scoring_task()
+        # await run_multi_account_task()          # ← Multi-Account (standalone)
+>>>>>>> Stashed changes
 
         # Run ALL platforms on daily schedule:
         # await run_email_digest_task()

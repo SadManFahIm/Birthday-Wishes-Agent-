@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Sensitive files — never copy into image
+.env
+linkedin_session.json
+
+# Runtime files — mounted as volumes
+agent_history.db
+agent.log
+browser_profile/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
