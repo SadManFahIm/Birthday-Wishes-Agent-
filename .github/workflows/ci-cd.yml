@@ -107,7 +107,7 @@ jobs:
     name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
     needs: [lint, test, docker-build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false # Set to true to enable deployment on push to main
 
     steps:
       - name: Checkout code
