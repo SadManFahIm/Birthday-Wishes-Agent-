@@ -1,0 +1,49 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: birthday-agent
+  annotations:
+    run.googleapis.com/ingress: internal
+spec:
+  template:
+    metadata:
+      annotations:
+        # Always keep 1 instance running (24/7)
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "1"
+        # Allow full CPU always (not just during requests)
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containerConcurrency: 1
+      timeoutSeconds: 3600
+      containers:
+        - image: YOUR_DOCKERHUB_USERNAME/birthday-agent:latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          env:
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: linkedin-username
+                  key: latest
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: linkedin-password
+                  key: latest
+            - name: GITHUB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: github-url
+                  key: latest
+          volumeMounts:
+            - name: agent-data
+              mountPath: /app/data
+      volumes:
+        - name: agent-data
+          csi:
+            driver: gcsfuse.run.googleapis.com
+            volumeAttributes:
+              bucketName: YOUR_GCS_BUCKET_NAME
