@@ -1,0 +1,52 @@
+{
+  "family": "birthday-agent",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "birthday-agent",
+      "image": "YOUR_DOCKERHUB_USERNAME/birthday-agent:latest",
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/birthday-agent",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "secrets": [
+        {
+          "name": "USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT_ID:secret:birthday-agent/USERNAME"
+        },
+        {
+          "name": "PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT_ID:secret:birthday-agent/PASSWORD"
+        },
+        {
+          "name": "GITHUB_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT_ID:secret:birthday-agent/GITHUB_URL"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "agent-data",
+          "containerPath": "/app/data"
+        }
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "agent-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "YOUR_EFS_ID",
+        "rootDirectory": "/birthday-agent"
+      }
+    }
+  ]
+}
