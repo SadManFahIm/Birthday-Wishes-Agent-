@@ -83,6 +83,7 @@ from occasion_detection import run_occasion_detection
 from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
 
 from relationship_health import (init_health_table, run_relationship_health_report)
+from decay_alert import (init_decay_table, run_decay_alert, get_fading_contacts, build_decay_alert_instructions)
 
 from best_time_connect import (init_activity_table, get_best_send_time,
 
@@ -2282,6 +2283,8 @@ async def main():
 
     init_eq_table()
 
+    init_decay_table()
+    
     init_accounts_table()           #  Multi-Account DB init
 
 
