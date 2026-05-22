@@ -85,6 +85,7 @@ from multilang_reply import detect_language, get_multilang_reply, build_multilan
 from relationship_health import (init_health_table, run_relationship_health_report)
 from instagram_birthday_detector import InstagramBirthdayDetector
 from instagram_birthdays import save_detected_birthday
+from birthday_miss_tracker import (init_miss_table, run_miss_tracker, get_missed_contacts)
 from decay_alert import (init_decay_table, run_decay_alert, get_fading_contacts, build_decay_alert_instructions)
 
 from best_time_connect import (init_activity_table, get_best_send_time,
@@ -2325,6 +2326,8 @@ async def main():
     init_predicted_birthday_table()
 
     init_eq_table()
+
+    init_miss_table()
 
     init_decay_table()
     
