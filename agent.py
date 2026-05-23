@@ -83,6 +83,9 @@ from occasion_detection import run_occasion_detection
 from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
 
 from relationship_health import (init_health_table, run_relationship_health_report)
+from twitter_birthday import (init_twitter_table, run_twitter_birthday_detection)
+from instagram_birthday_detector import InstagramBirthdayDetector
+from instagram_birthdays import save_detected_birthday
 from birthday_miss_tracker import (init_miss_table, run_miss_tracker, get_missed_contacts)
 from decay_alert import (init_decay_table, run_decay_alert, get_fading_contacts, build_decay_alert_instructions)
 
@@ -1078,7 +1081,46 @@ async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: 
 
 task_github = f"Open browser, go to {GITHUB_URL} and tell me how many followers they have."
 
+async def run_instagram_birthday_detection_task():
 
+    logger.info("=== Instagram Birthday Detection ===")
+
+    detector = InstagramBirthdayDetector(USERNAME)
+
+    detector.load_session(USERNAME)
+
+    target_accounts = [
+        "instagram",
+    ]
+
+    total_detected = 0
+
+    for account in target_accounts:
+
+        logger.info("Scanning account: %s", account)
+
+        results = detector.detect_birthday_posts(
+            target_username=account,
+            limit=10,
+        )
+
+        for post in results:
+
+            save_detected_birthday(post)
+
+            total_detected += 1
+
+            logger.info(
+                "Birthday detected: %s",
+                post["post_url"]
+            )
+
+    logger.info(
+        "Instagram birthday detection completed. Total: %d",
+        total_detected
+    )
+
+    return total_detected
 
 
 
@@ -2094,6 +2136,8 @@ async def daily_job():
 
             await run_instagram_reply_task()
 
+            await run_instagram_birthday_detection_task()
+
 
 
         await run_followup_task()
@@ -2287,6 +2331,8 @@ async def main():
     init_miss_table()
 
     init_decay_table()
+
+    init_twitter_table()
     
     init_accounts_table()           #  Multi-Account DB init
 
