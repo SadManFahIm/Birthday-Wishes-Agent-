@@ -83,6 +83,7 @@ from occasion_detection import run_occasion_detection
 from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
 
 from relationship_health import (init_health_table, run_relationship_health_report)
+from twitter_birthday import (init_twitter_table, run_twitter_birthday_detection)
 from instagram_birthday_detector import InstagramBirthdayDetector
 from instagram_birthdays import save_detected_birthday
 from birthday_miss_tracker import (init_miss_table, run_miss_tracker, get_missed_contacts)
@@ -2330,6 +2331,8 @@ async def main():
     init_miss_table()
 
     init_decay_table()
+
+    init_twitter_table()
     
     init_accounts_table()           #  Multi-Account DB init
 
