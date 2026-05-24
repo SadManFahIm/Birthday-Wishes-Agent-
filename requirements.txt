@@ -19,3 +19,4 @@ uvicorn[standard]
 websockets
 instaloader
 tweepy
+slack-sdk
