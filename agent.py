@@ -115,6 +115,8 @@ from email_digest import send_weekly_digest
 
 from voice import generate_voice
 
+from slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
+
 from personality_profiling import (init_personality_table, analyze_personality,
 
                                    get_personality_profile,
@@ -2333,6 +2335,8 @@ async def main():
     init_decay_table()
 
     init_twitter_table()
+
+    init_slack_table()
     
     init_accounts_table()           #  Multi-Account DB init
 
