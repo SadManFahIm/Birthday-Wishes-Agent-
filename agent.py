@@ -42,6 +42,8 @@ from followup import (init_followup_table, schedule_followup,
 
 from calendar_export import export_birthday_calendar
 
+from auto_timezone_scheduler import (init_scheduler_table, run_auto_timezone_scheduler, get_pending_scheduled_wishes)
+
 from smart_timing import should_send_now, build_timing_instructions
 
 from sentiment import analyze_sentiment, get_sentiment_reply, build_sentiment_instructions
@@ -2323,6 +2325,8 @@ async def main():
     init_categorizer_table()
 
     init_ab_table()
+
+    init_scheduler_table()
 
     init_personality_table()
 
