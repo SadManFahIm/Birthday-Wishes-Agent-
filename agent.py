@@ -117,6 +117,8 @@ from email_digest import send_weekly_digest
 
 from voice import generate_voice
 
+from smart_followup import (init_smart_followup_table, run_smart_followup, log_wish_for_followup, mark_reply_received)
+
 from slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
 
 from personality_profiling import (init_personality_table, analyze_personality,
@@ -2335,6 +2337,8 @@ async def main():
     init_eq_table()
 
     init_miss_table()
+
+    init_smart_followup_table()
 
     init_decay_table()
 
