@@ -117,6 +117,8 @@ from email_digest import send_weekly_digest
 
 from voice import generate_voice
 
+from personalized_connect import (init_connect_request_table, run_personalized_connect, get_connect_stats)
+
 from smart_followup import (init_smart_followup_table, run_smart_followup, log_wish_for_followup, mark_reply_received)
 
 from slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
@@ -2325,6 +2327,8 @@ async def main():
     init_campaign_table()
 
     init_categorizer_table()
+
+    init_connect_request_table()
 
     init_ab_table()
 
