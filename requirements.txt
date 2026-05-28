@@ -20,3 +20,4 @@ websockets
 instaloader
 tweepy
 slack-sdk
+pyotp

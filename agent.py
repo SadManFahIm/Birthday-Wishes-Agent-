@@ -123,6 +123,8 @@ from smart_followup import (init_smart_followup_table, run_smart_followup, log_w
 
 from slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
 
+from two_factor_auth import (is_2fa_enabled, get_2fa_instructions, get_totp_code, get_2fa_status)
+
 from personality_profiling import (init_personality_table, analyze_personality,
 
                                    get_personality_profile,
@@ -931,19 +933,7 @@ def dry_run_notice() -> str:
 
 def build_linkedin_reply_task(already_logged_in: bool) -> str:
 
-    login = (
-
-        "You are already logged into LinkedIn. Skip login."
-
-        if already_logged_in else
-
-        f"Go to https://linkedin.com and log in:\n"
-
-        f"  Email: {USERNAME}\n  Password: {PASSWORD}\n"
-
-        "Handle MFA if prompted.\n"
-
-    )
+    login = login = get_2fa_instructions(already_logged_in)
 
     templates_str = "\n".join(f'  {i+1}. "{t}"' for i, t in enumerate(PERSONALIZED_REPLY_TEMPLATES))
 
@@ -989,19 +979,7 @@ def build_linkedin_reply_task(already_logged_in: bool) -> str:
 
 def build_birthday_detection_task(already_logged_in: bool) -> str:
 
-    login = (
-
-        "You are already logged into LinkedIn. Skip login."
-
-        if already_logged_in else
-
-        f"Go to https://linkedin.com and log in:\n"
-
-        f"  Email: {USERNAME}\n  Password: {PASSWORD}\n"
-
-        "Handle MFA if prompted.\n"
-
-    )
+    login= get_2fa_instructions(already_logged_in)
 
     templates_str = "\n".join(f'  {i+1}. "{t}"' for i, t in enumerate(BIRTHDAY_WISH_TEMPLATES))
 
