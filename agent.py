@@ -123,6 +123,8 @@ from smart_followup import (init_smart_followup_table, run_smart_followup, log_w
 
 from slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
 
+from proxy_rotation import (init_proxy_table, get_next_proxy, build_proxy_browser_config, mark_proxy_failed, mark_proxy_success)
+
 from two_factor_auth import (is_2fa_enabled, get_2fa_instructions, get_totp_code, get_2fa_status)
 
 from personality_profiling import (init_personality_table, analyze_personality,
@@ -2300,6 +2302,8 @@ async def main():
 
     init_health_table()
 
+    init_proxy_table()
+    
     init_activity_table()
 
     init_campaign_table()
