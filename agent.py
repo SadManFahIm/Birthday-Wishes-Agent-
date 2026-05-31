@@ -127,6 +127,8 @@ from proxy_rotation import (init_proxy_table, get_next_proxy, build_proxy_browse
 
 from two_factor_auth import (is_2fa_enabled, get_2fa_instructions, get_totp_code, get_2fa_status)
 
+from vpn_switch import (init_vpn_table, auto_switch_vpn, check_and_switch_if_blocked, get_vpn_status)
+
 from personality_profiling import (init_personality_table, analyze_personality,
 
                                    get_personality_profile,
@@ -2331,6 +2333,8 @@ async def main():
     init_twitter_table()
 
     init_slack_table()
+
+    init_vpn_table()
     
     init_accounts_table()           #  Multi-Account DB init
 
