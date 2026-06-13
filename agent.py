@@ -42,6 +42,8 @@ from followup import (init_followup_table, schedule_followup,
 
 from calendar_export import export_birthday_calendar
 
+from auto_timezone_scheduler import (init_scheduler_table, run_auto_timezone_scheduler, get_pending_scheduled_wishes)
+
 from smart_timing import should_send_now, build_timing_instructions
 
 from sentiment import analyze_sentiment, get_sentiment_reply, build_sentiment_instructions
@@ -83,6 +85,9 @@ from occasion_detection import run_occasion_detection
 from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
 
 from relationship_health import (init_health_table, run_relationship_health_report)
+from twitter_birthday import (init_twitter_table, run_twitter_birthday_detection)
+from instagram_birthday_detector import InstagramBirthdayDetector
+from instagram_birthdays import save_detected_birthday
 from birthday_miss_tracker import (init_miss_table, run_miss_tracker, get_missed_contacts)
 from decay_alert import (init_decay_table, run_decay_alert, get_fading_contacts, build_decay_alert_instructions)
 
@@ -111,6 +116,18 @@ from voice_to_text import run_voice_reply_task as run_voice_to_text_task
 from email_digest import send_weekly_digest
 
 from voice import generate_voice
+
+from personalized_connect import (init_connect_request_table, run_personalized_connect, get_connect_stats)
+
+from smart_followup import (init_smart_followup_table, run_smart_followup, log_wish_for_followup, mark_reply_received)
+
+from slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
+
+from proxy_rotation import (init_proxy_table, get_next_proxy, build_proxy_browser_config, mark_proxy_failed, mark_proxy_success)
+
+from two_factor_auth import (is_2fa_enabled, get_2fa_instructions, get_totp_code, get_2fa_status)
+
+from vpn_switch import (init_vpn_table, auto_switch_vpn, check_and_switch_if_blocked, get_vpn_status)
 
 from personality_profiling import (init_personality_table, analyze_personality,
 
@@ -920,19 +937,7 @@ def dry_run_notice() -> str:
 
 def build_linkedin_reply_task(already_logged_in: bool) -> str:
 
-    login = (
-
-        "You are already logged into LinkedIn. Skip login."
-
-        if already_logged_in else
-
-        f"Go to https://linkedin.com and log in:\n"
-
-        f"  Email: {USERNAME}\n  Password: {PASSWORD}\n"
-
-        "Handle MFA if prompted.\n"
-
-    )
+    login = login = get_2fa_instructions(already_logged_in)
 
     templates_str = "\n".join(f'  {i+1}. "{t}"' for i, t in enumerate(PERSONALIZED_REPLY_TEMPLATES))
 
@@ -978,19 +983,7 @@ def build_linkedin_reply_task(already_logged_in: bool) -> str:
 
 def build_birthday_detection_task(already_logged_in: bool) -> str:
 
-    login = (
-
-        "You are already logged into LinkedIn. Skip login."
-
-        if already_logged_in else
-
-        f"Go to https://linkedin.com and log in:\n"
-
-        f"  Email: {USERNAME}\n  Password: {PASSWORD}\n"
-
-        "Handle MFA if prompted.\n"
-
-    )
+    login= get_2fa_instructions(already_logged_in)
 
     templates_str = "\n".join(f'  {i+1}. "{t}"' for i, t in enumerate(BIRTHDAY_WISH_TEMPLATES))
 
@@ -1078,7 +1071,46 @@ async def run_with_retry(coro_factory, task_name: str, retries: int = 3, delay: 
 
 task_github = f"Open browser, go to {GITHUB_URL} and tell me how many followers they have."
 
+async def run_instagram_birthday_detection_task():
 
+    logger.info("=== Instagram Birthday Detection ===")
+
+    detector = InstagramBirthdayDetector(USERNAME)
+
+    detector.load_session(USERNAME)
+
+    target_accounts = [
+        "instagram",
+    ]
+
+    total_detected = 0
+
+    for account in target_accounts:
+
+        logger.info("Scanning account: %s", account)
+
+        results = detector.detect_birthday_posts(
+            target_username=account,
+            limit=10,
+        )
+
+        for post in results:
+
+            save_detected_birthday(post)
+
+            total_detected += 1
+
+            logger.info(
+                "Birthday detected: %s",
+                post["post_url"]
+            )
+
+    logger.info(
+        "Instagram birthday detection completed. Total: %d",
+        total_detected
+    )
+
+    return total_detected
 
 
 
@@ -2094,6 +2126,8 @@ async def daily_job():
 
             await run_instagram_reply_task()
 
+            await run_instagram_birthday_detection_task()
+
 
 
         await run_followup_task()
@@ -2270,13 +2304,19 @@ async def main():
 
     init_health_table()
 
+    init_proxy_table()
+    
     init_activity_table()
 
     init_campaign_table()
 
     init_categorizer_table()
 
+    init_connect_request_table()
+
     init_ab_table()
+
+    init_scheduler_table()
 
     init_personality_table()
 
@@ -2286,7 +2326,15 @@ async def main():
 
     init_miss_table()
 
+    init_smart_followup_table()
+
     init_decay_table()
+
+    init_twitter_table()
+
+    init_slack_table()
+
+    init_vpn_table()
     
     init_accounts_table()           #  Multi-Account DB init
 
