@@ -17,6 +17,8 @@ soundfile
 fastapi
 uvicorn[standard]
 websockets
+reportlab
+matplotlib
 instaloader
 tweepy
 slack-sdk
