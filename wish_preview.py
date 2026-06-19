@@ -1,385 +1,331 @@
-"""
-wish_preview.py
----------------
-Wish Preview dashboard for Birthday Wishes Agent.
-
-Before sending any birthday wishes, shows a preview of each
-generated wish so the user can approve, edit, or reject them.
-
-Run with:
-    streamlit run wish_preview.py
-
-Features:
-  - Shows all pending wishes for today
-  - Displays contact name, job, relationship, and generated wish
-  - Approve -> marks as approved, agent will send
-  - Edit -> allows editing the wish before approving
-  - Reject -> skips this contact today
-  - Bulk approve all
-  - Stores approval status in SQLite
-"""
-
-import json
-import sqlite3
-from datetime import date, datetime
-from pathlib import Path
-
-import streamlit as st
-
-DB_FILE = Path("agent_history.db")
-
-# ----------------------------------------------
-# PAGE CONFIG
-# ----------------------------------------------
-st.set_page_config(
-    page_title="Wish Preview",
-    page_icon="",
-    layout="wide",
-)
-
-# ----------------------------------------------
-# DB SETUP
-# ----------------------------------------------
-def init_preview_table():
-    conn = sqlite3.connect(DB_FILE)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS wish_previews (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            contact      TEXT    NOT NULL,
-            platform     TEXT    NOT NULL DEFAULT 'linkedin',
-            relationship TEXT    NOT NULL DEFAULT 'acquaintance',
-            job_title    TEXT,
-            company      TEXT,
-            wish_text    TEXT    NOT NULL,
-            score        INTEGER DEFAULT 0,
-            status       TEXT    NOT NULL DEFAULT 'pending',
-            edited       INTEGER NOT NULL DEFAULT 0,
-            date         TEXT    NOT NULL,
-            created_at   TEXT    NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-def get_pending_previews() -> list[dict]:
-    if not DB_FILE.exists():
-        return []
-    today = date.today().isoformat()
-    conn  = sqlite3.connect(DB_FILE)
-    rows  = conn.execute(
-        "SELECT id, contact, platform, relationship, job_title, "
-        "company, wish_text, score, status, edited "
-        "FROM wish_previews WHERE date = ? ORDER BY id",
-        (today,),
-    ).fetchall()
-    conn.close()
-    return [
-        {
-            "id":           r[0],
-            "contact":      r[1],
-            "platform":     r[2],
-            "relationship": r[3],
-            "job_title":    r[4] or "",
-            "company":      r[5] or "",
-            "wish_text":    r[6],
-            "score":        r[7] or 0,
-            "status":       r[8],
-            "edited":       bool(r[9]),
-        }
-        for r in rows
-    ]
-
-
-def update_preview_status(preview_id: int, status: str,
-                           wish_text: str = None):
-    conn = sqlite3.connect(DB_FILE)
-    if wish_text:
-        conn.execute(
-            "UPDATE wish_previews SET status=?, wish_text=?, edited=1 WHERE id=?",
-            (status, wish_text, preview_id),
-        )
-    else:
-        conn.execute(
-            "UPDATE wish_previews SET status=? WHERE id=?",
-            (status, preview_id),
-        )
-    conn.commit()
-    conn.close()
-
-
-def add_preview(
-    contact: str,
-    wish_text: str,
-    platform: str = "linkedin",
-    relationship: str = "acquaintance",
-    job_title: str = "",
-    company: str = "",
-    score: int = 0,
-):
-    """Add a wish to the preview queue."""
-    conn = sqlite3.connect(DB_FILE)
-    conn.execute(
-        "INSERT INTO wish_previews "
-        "(contact, platform, relationship, job_title, company, "
-        "wish_text, score, status, date, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)",
-        (contact, platform, relationship, job_title, company,
-         wish_text, score, date.today().isoformat(),
-         datetime.now().isoformat()),
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_approved_wishes() -> list[dict]:
-    """Get all approved wishes for today - used by the agent to send."""
-    if not DB_FILE.exists():
-        return []
-    today = date.today().isoformat()
-    conn  = sqlite3.connect(DB_FILE)
-    rows  = conn.execute(
-        "SELECT contact, platform, wish_text, relationship "
-        "FROM wish_previews WHERE date = ? AND status = 'approved'",
-        (today,),
-    ).fetchall()
-    conn.close()
-    return [
-        {"contact": r[0], "platform": r[1],
-         "wish_text": r[2], "relationship": r[3]}
-        for r in rows
-    ]
-
-
-# ----------------------------------------------
-# CSS
-# ----------------------------------------------
-st.markdown("""
-<style>
-  .wish-card {
-    background: #1E2329;
-    border: 1px solid #2E3440;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-  .wish-card.approved { border-color: #4CAF50; }
-  .wish-card.rejected { border-color: #F44336; opacity: 0.6; }
-  .wish-card.edited   { border-color: #FF9800; }
-  .status-badge {
-    display: inline-block;
-    padding: 3px 12px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 700;
-  }
-  .badge-pending  { background: #2E3440; color: #aaa; }
-  .badge-approved { background: #1a3a2a; color: #4CAF50; }
-  .badge-rejected { background: #3a1a1a; color: #F44336; }
-  .score-bar { height: 6px; border-radius: 3px; background: #2E3440; }
-</style>
-""", unsafe_allow_html=True)
-
-# ----------------------------------------------
-# INIT DB
-# ----------------------------------------------
-if DB_FILE.exists():
-    init_preview_table()
-
-# ----------------------------------------------
-# HEADER
-# ----------------------------------------------
-st.title(" Wish Preview")
-st.caption("Review and approve birthday wishes before they are sent.")
-st.divider()
-
-# ----------------------------------------------
-# ADD SAMPLE PREVIEWS (Demo Mode)
-# ----------------------------------------------
-with st.sidebar:
-    st.header(" Options")
-
-    if st.button(" Add Sample Wish (Demo)", use_container_width=True):
-        if DB_FILE.exists():
-            init_preview_table()
-            import random
-            samples = [
-                ("Rahul Ahmed",  "linkedin", "colleague",     "Software Engineer", "Google",
-                 "Happy Birthday Rahul!  Hope your journey at Google keeps inspiring the engineer in you. Wishing you a year full of breakthroughs! ", 9),
-                ("Priya Sharma", "linkedin", "close_friend",  "Product Manager",   "Meta",
-                 "Hey Priya!  Can't believe another year has gone by - hope today is as incredible as you always make everything around you! Let's celebrate soon! ", 8),
-                ("Ahmed Hassan", "whatsapp", "acquaintance",  "Marketing Manager", "Startup",
-                 "Happy Birthday Ahmed!  Hope you have a wonderful day and a fantastic year ahead!", 7),
-            ]
-            s = random.choice(samples)
-            add_preview(s[0], s[5], s[1], s[2], s[3], s[4], s[6])
-            st.success(f"Sample wish added for {s[0]}!")
-            st.rerun()
-
-    st.divider()
-    st.caption("Agent reads approved wishes and sends them automatically.")
-    st.caption("Rejected wishes are skipped for today.")
-
-# ----------------------------------------------
-# LOAD PREVIEWS
-# ----------------------------------------------
-previews = get_pending_previews()
-
-if not previews:
-    st.info(
-        " No wishes pending review today.\n\n"
-        "The agent will add wishes here before sending them "
-        "when `WISH_PREVIEW_ENABLED = True` in `agent.py`."
-    )
-    st.stop()
-
-# ----------------------------------------------
-# SUMMARY BAR
-# ----------------------------------------------
-pending  = sum(1 for p in previews if p["status"] == "pending")
-approved = sum(1 for p in previews if p["status"] == "approved")
-rejected = sum(1 for p in previews if p["status"] == "rejected")
-edited   = sum(1 for p in previews if p["edited"])
-
-c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric(" Total",    len(previews))
-c2.metric(" Pending",  pending)
-c3.metric(" Approved", approved)
-c4.metric(" Rejected", rejected)
-c5.metric(" Edited",   edited)
-
-# ----------------------------------------------
-# BULK ACTIONS
-# ----------------------------------------------
-col_a, col_b = st.columns(2)
-with col_a:
-    if st.button(" Approve All Pending", use_container_width=True, type="primary"):
-        for p in previews:
-            if p["status"] == "pending":
-                update_preview_status(p["id"], "approved")
-        st.success("All pending wishes approved!")
-        st.rerun()
-
-with col_b:
-    if st.button(" Reject All Pending", use_container_width=True):
-        for p in previews:
-            if p["status"] == "pending":
-                update_preview_status(p["id"], "rejected")
-        st.warning("All pending wishes rejected.")
-        st.rerun()
-
-st.divider()
-
-# ----------------------------------------------
-# WISH CARDS
-# ----------------------------------------------
-PLATFORM_ICONS = {
-    "linkedin":  "",
-    "whatsapp":  "",
-    "facebook":  "",
-    "instagram": "",
-}
-RELATIONSHIP_COLORS = {
-    "close_friend": "#4CAF50",
-    "colleague":    "#2196F3",
-    "acquaintance": "#9E9E9E",
-}
-
-for preview in previews:
-    status    = preview["status"]
-    platform  = preview["platform"]
-    rel       = preview["relationship"]
-    score     = preview["score"]
-    pid       = preview["id"]
-
-    badge_class  = f"badge-{status}"
-    status_label = {"pending": " Pending",
-                    "approved": " Approved",
-                    "rejected": " Rejected"}.get(status, status)
-
-    with st.container():
-        # Header row
-        h1, h2, h3 = st.columns([3, 1, 1])
-        with h1:
-            st.markdown(
-                f"### {PLATFORM_ICONS.get(platform, '')} {preview['contact']}"
-            )
-            job_line = ""
-            if preview["job_title"] and preview["company"]:
-                job_line = f"{preview['job_title']} @ {preview['company']}"
-            elif preview["job_title"]:
-                job_line = preview["job_title"]
-            if job_line:
-                st.caption(f" {job_line}")
-        with h2:
-            rel_color = RELATIONSHIP_COLORS.get(rel, "#9E9E9E")
-            st.markdown(
-                f'<span style="color:{rel_color};font-weight:600;">'
-                f' {rel.replace("_", " ").title()}</span>',
-                unsafe_allow_html=True,
-            )
-        with h3:
-            st.markdown(
-                f'<span class="status-badge {badge_class}">'
-                f'{status_label}</span>',
-                unsafe_allow_html=True,
-            )
-
-        # Score bar
-        if score > 0:
-            score_color = "#4CAF50" if score >= 7 else "#FFC107" if score >= 5 else "#F44336"
-            st.markdown(
-                f'<div style="margin:8px 0;">'
-                f'Quality Score: <strong style="color:{score_color};">'
-                f'{score}/10</strong></div>',
-                unsafe_allow_html=True,
-            )
-
-        # Wish text
-        if status == "pending":
-            edited_wish = st.text_area(
-                " Wish message",
-                value=preview["wish_text"],
-                key=f"wish_{pid}",
-                height=100,
-            )
-        else:
-            st.info(f" {preview['wish_text']}")
-            edited_wish = preview["wish_text"]
-
-        # Action buttons
-        if status == "pending":
-            b1, b2, b3 = st.columns(3)
-            with b1:
-                if st.button(" Approve", key=f"approve_{pid}",
-                             use_container_width=True, type="primary"):
-                    update_preview_status(pid, "approved", edited_wish)
-                    st.success(f"Approved wish for {preview['contact']}!")
-                    st.rerun()
-            with b2:
-                if st.button(" Save Edit", key=f"edit_{pid}",
-                             use_container_width=True):
-                    update_preview_status(pid, "pending", edited_wish)
-                    st.info("Edit saved. Click Approve when ready.")
-                    st.rerun()
-            with b3:
-                if st.button(" Reject", key=f"reject_{pid}",
-                             use_container_width=True):
-                    update_preview_status(pid, "rejected")
-                    st.warning(f"Rejected wish for {preview['contact']}.")
-                    st.rerun()
-        elif status == "approved":
-            if st.button(" Undo Approval", key=f"undo_{pid}",
-                         use_container_width=True):
-                update_preview_status(pid, "pending")
-                st.rerun()
-
-        st.divider()
-
-# ----------------------------------------------
-# FOOTER
-# ----------------------------------------------
-st.caption(
-    f" Birthday Wishes Agent v4.0 - Wish Preview | "
-    f"Today: {date.today().strftime('%B %d, %Y')}"
-)
+"""
+Real-time Wish Preview — Birthday Wishes Agent v7.0
+Select a contact, AI-generate a wish, edit it live, and preview exactly how it
+will render on the target platform (LinkedIn / WhatsApp / etc.) before sending.
+"""
+
+import streamlit as st
+import sqlite3
+import time
+import random
+from pathlib import Path
+from datetime import datetime
+
+# ── Page config ──────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Wish Preview",
+    page_icon="✨",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ── Styling (matches Command Center theme) ────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+:root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --accent: #f78166; --green: #3fb950; --yellow: #d29922;
+    --red: #f85149; --blue: #58a6ff; --muted: #8b949e; --text: #e6edf3;
+}
+.stApp { background: var(--bg); color: var(--text); }
+
+.cc-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+}
+.cc-header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: var(--text); }
+.cc-badge {
+    background: var(--accent); color: #fff; font-size: 0.65rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.cc-version { margin-left: auto; font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+.section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); margin: 22px 0 10px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Score badge */
+.score-badge {
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 700;
+    font-size: 1.4rem; padding: 6px 16px; border-radius: 10px;
+}
+.score-high { background: #051a09; color: var(--green); border: 1px solid var(--green); }
+.score-mid  { background: #1a1500; color: var(--yellow); border: 1px solid var(--yellow); }
+.score-low  { background: #1a0505; color: var(--red); border: 1px solid var(--red); }
+
+.score-row { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 5px 0; border-bottom: 1px solid #21262d; }
+.score-row:last-child { border-bottom: none; }
+.score-pts { font-family: 'JetBrains Mono', monospace; color: var(--green); font-weight: 600; }
+.score-pts.zero { color: var(--muted); }
+
+/* Platform preview frames */
+.preview-frame {
+    border-radius: 12px; padding: 16px; border: 1px solid var(--border);
+    background: var(--surface); min-height: 140px;
+}
+.preview-linkedin { background: #1b1f23; border-color: #2a3744; }
+.preview-whatsapp  { background: #0b141a; border-color: #1f3a30; }
+
+.li-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.li-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg,#f78166,#d29922); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:0.9rem; }
+.li-name { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.li-sub { font-size: 0.7rem; color: var(--muted); }
+.li-text { font-size: 0.82rem; line-height: 1.5; color: #e6edf3; white-space: pre-wrap; }
+
+.wa-bubble {
+    background: #005c4b; border-radius: 8px; padding: 10px 12px; max-width: 90%;
+    margin-left: auto; font-size: 0.82rem; line-height: 1.5; color: #e9edef; white-space: pre-wrap;
+    position: relative;
+}
+.wa-meta { font-size: 0.65rem; color: #8696a0; text-align: right; margin-top: 4px; }
+
+.contact-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s;
+}
+.contact-card:hover { border-color: var(--blue); }
+.contact-card.selected { border-color: var(--accent); background: #1c1410; }
+.contact-name { font-weight: 600; font-size: 0.85rem; }
+.contact-meta { font-size: 0.7rem; color: var(--muted); }
+
+div[data-testid="stButton"] > button {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; font-size: 0.82rem; font-weight: 500; transition: all 0.15s;
+}
+div[data-testid="stButton"] > button:hover { border-color: var(--blue); background: #1c2128; color: var(--text); }
+div[data-testid="stButton"] > button[kind="primary"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+div[data-testid="stButton"] > button[kind="primary"]:hover { background: #e56d55; border-color: #e56d55; }
+
+textarea { background: #0d1117 !important; color: #e6edf3 !important; border-color: var(--border) !important; font-size: 0.85rem !important; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+""", unsafe_allow_html=True)
+
+# ── Demo contact data (swap with real DB query: SELECT * FROM contacts) ──────
+DEMO_CONTACTS = [
+    {"name": "Rakib Hossain", "job": "Senior Backend Engineer", "company": "Pathao", "platform": "LinkedIn", "memory": "you both talked about distributed systems at PyCon BD last year", "industry": "tech"},
+    {"name": "Nadia Islam",   "job": "Product Designer",        "company": "bKash",  "platform": "WhatsApp", "memory": "she just shipped a big redesign for the app", "industry": "design"},
+    {"name": "Tanvir Ahmed",  "job": "Founder",                 "company": "ShopUp", "platform": "LinkedIn", "memory": "he raised a new funding round last month", "industry": "startup"},
+    {"name": "Mim Chowdhury", "job": "Data Scientist",          "company": "Brain Station 23", "platform": "WhatsApp", "memory": "you used to be university batchmates", "industry": "tech"},
+]
+
+# ── Session state ─────────────────────────────────────────────────────────────
+def _init_state():
+    defaults = {
+        "selected_contact_idx": 0,
+        "wish_text": "",
+        "generated_once": False,
+        "manual_edit": False,
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+_init_state()
+
+# ── Mock AI wish generator (swap with real LangChain/Gemini call) ────────────
+TEMPLATES = [
+    "Happy Birthday, {name}! 🎉 Hope your day as {job} at {company} is as great as the work you do. Remember {memory} — here's to another year of wins!",
+    "Happy Birthday, {name}! 🎂 Wishing you an amazing year ahead at {company}. I still think about how {memory}. Take some time today just for you!",
+    "Hey {name}, Happy Birthday! 🥳 Your work as {job} continues to inspire — and {memory}. Hope it's a great one!",
+]
+
+def generate_ai_wish(contact: dict) -> str:
+    template = random.choice(TEMPLATES)
+    return template.format(
+        name=contact["name"].split()[0],
+        job=contact["job"],
+        company=contact["company"],
+        memory=contact["memory"],
+    )
+
+def score_wish(text: str, contact: dict) -> dict:
+    """Mirrors wish_personalization_score.py scoring logic for live preview."""
+    score = 0
+    breakdown = {}
+
+    first_name = contact["name"].split()[0]
+    has_name = first_name.lower() in text.lower()
+    breakdown["Name mentioned"] = 2 if has_name else 0
+
+    has_job = contact["job"].split()[-1].lower() in text.lower() or contact["company"].lower() in text.lower()
+    breakdown["Job/company ref"] = 2 if has_job else 0
+
+    has_industry = contact["industry"].lower() in text.lower()
+    breakdown["Industry ref"] = 1 if has_industry else 0
+
+    memory_keywords = contact["memory"].lower().split()[:3]
+    has_memory = any(k in text.lower() for k in memory_keywords if len(k) > 3)
+    breakdown["Memory/past context"] = 2 if has_memory else 0
+
+    generic_phrases = ["have a great day", "best wishes", "many happy returns"]
+    is_unique = not any(p in text.lower() for p in generic_phrases)
+    breakdown["Unique language"] = 1 if is_unique else 0
+
+    word_count = len(text.split())
+    right_length = 15 <= word_count <= 60
+    breakdown["Right length"] = 1 if right_length else 0
+
+    warm_words = ["hope", "wishing", "amazing", "great", "celebrate", "🎉", "🎂", "🥳"]
+    has_warmth = any(w in text.lower() for w in warm_words)
+    breakdown["Warm tone"] = 1 if has_warmth else 0
+
+    score = sum(breakdown.values())
+    return {"score": score, "breakdown": breakdown}
+
+# ── Header ─────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="cc-header">
+  <span style="font-size:1.6rem">✨</span>
+  <h1>Real-time Wish Preview</h1>
+  <span class="cc-badge">v7.0</span>
+  <span class="cc-version">Birthday Wishes Agent</span>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Layout: contact list | editor + score | platform preview ────────────────
+col_contacts, col_editor, col_preview = st.columns([1, 1.5, 1.3], gap="large")
+
+# ── Column 1: Contact picker ──────────────────────────────────────────────────
+with col_contacts:
+    st.markdown('<div class="section-title">Today\'s Birthdays</div>', unsafe_allow_html=True)
+    for idx, c in enumerate(DEMO_CONTACTS):
+        selected = idx == st.session_state.selected_contact_idx
+        css = "contact-card selected" if selected else "contact-card"
+        plat_icon = "💼" if c["platform"] == "LinkedIn" else "💬"
+        st.markdown(f"""
+        <div class="{css}">
+          <div class="contact-name">{c['name']}</div>
+          <div class="contact-meta">{plat_icon} {c['job']} · {c['company']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button(f"Select {c['name'].split()[0]}", key=f"select_{idx}", use_container_width=True):
+            st.session_state.selected_contact_idx = idx
+            st.session_state.wish_text = ""
+            st.session_state.generated_once = False
+            st.rerun()
+
+contact = DEMO_CONTACTS[st.session_state.selected_contact_idx]
+
+# ── Column 2: AI generate + manual edit ───────────────────────────────────────
+with col_editor:
+    st.markdown('<div class="section-title">Generate & Edit</div>', unsafe_allow_html=True)
+
+    gen_col1, gen_col2 = st.columns([1, 1])
+    with gen_col1:
+        if st.button("✨ Generate AI Wish", type="primary", use_container_width=True):
+            with st.spinner("Generating..."):
+                time.sleep(0.4)
+                st.session_state.wish_text = generate_ai_wish(contact)
+                st.session_state.generated_once = True
+            st.rerun()
+    with gen_col2:
+        if st.button("🔁 Regenerate", use_container_width=True, disabled=not st.session_state.generated_once):
+            with st.spinner("Regenerating..."):
+                time.sleep(0.4)
+                st.session_state.wish_text = generate_ai_wish(contact)
+            st.rerun()
+
+    wish_text = st.text_area(
+        "Edit wish (updates preview live)",
+        value=st.session_state.wish_text,
+        height=180,
+        key="wish_editor",
+        placeholder="Click 'Generate AI Wish' or start typing your own...",
+    )
+    st.session_state.wish_text = wish_text
+
+    word_count = len(wish_text.split()) if wish_text else 0
+    char_count = len(wish_text)
+    st.caption(f"📝 {word_count} words · {char_count} characters · target platform: **{contact['platform']}**")
+
+    # ── Live score ────────────────────────────────────────────────────────────
+    if wish_text.strip():
+        result = score_wish(wish_text, contact)
+        score = result["score"]
+
+        if score >= 8:
+            badge_cls, badge_label = "score-high", f"⭐ {score}/10"
+        elif score >= 6:
+            badge_cls, badge_label = "score-mid", f"⚡ {score}/10"
+        else:
+            badge_cls, badge_label = "score-low", f"⚠️ {score}/10"
+
+        st.markdown(f'<div class="section-title">Personalization Score</div>', unsafe_allow_html=True)
+        st.markdown(f'<span class="score-badge {badge_cls}">{badge_label}</span>', unsafe_allow_html=True)
+
+        if score < 6:
+            st.warning("Score below 6 — auto-retry would trigger here in live mode.")
+
+        rows = ""
+        for label, pts in result["breakdown"].items():
+            pts_cls = "score-pts" if pts > 0 else "score-pts zero"
+            max_pts = {"Name mentioned": 2, "Job/company ref": 2, "Industry ref": 1,
+                       "Memory/past context": 2, "Unique language": 1, "Right length": 1, "Warm tone": 1}[label]
+            rows += f'<div class="score-row"><span>{label}</span><span class="{pts_cls}">+{pts}/{max_pts}</span></div>'
+        st.markdown(f'<div class="preview-frame">{rows}</div>', unsafe_allow_html=True)
+    else:
+        st.info("Generate or type a wish to see the live personalization score.")
+
+# ── Column 3: Platform preview ────────────────────────────────────────────────
+with col_preview:
+    st.markdown('<div class="section-title">Platform Preview</div>', unsafe_allow_html=True)
+
+    initials = "".join([p[0] for p in contact["name"].split()[:2]]).upper()
+    now_str = datetime.now().strftime("%I:%M %p")
+
+    if not wish_text.strip():
+        st.markdown(f"""
+        <div class="preview-frame" style="display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:0.8rem;">
+          Preview will appear here
+        </div>
+        """, unsafe_allow_html=True)
+    elif contact["platform"] == "LinkedIn":
+        st.markdown(f"""
+        <div class="preview-frame preview-linkedin">
+          <div class="li-header">
+            <div class="li-avatar">{initials}</div>
+            <div>
+              <div class="li-name">You</div>
+              <div class="li-sub">to {contact['name']} · just now</div>
+            </div>
+          </div>
+          <div class="li-text">{wish_text}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="preview-frame preview-whatsapp">
+          <div class="wa-bubble">
+            {wish_text}
+            <div class="wa-meta">{now_str} ✓✓</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    send_col1, send_col2 = st.columns(2)
+    with send_col1:
+        st.button("📤 Send Now", type="primary", use_container_width=True, disabled=not wish_text.strip())
+    with send_col2:
+        st.button("📅 Schedule", use_container_width=True, disabled=not wish_text.strip())
+
+# ── Footer ─────────────────────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown(f"""
+<div style="display:flex;justify-content:space-between;align-items:center;
+            font-size:0.7rem;color:#8b949e;padding:4px 0 10px;">
+  <span>Birthday Wishes Agent · branch <code style="background:#161b22;padding:1px 5px;border-radius:4px">7.0</code></span>
+  <span>Real-time Wish Preview</span>
+  <span>Built by <strong style="color:#e6edf3">SadManFahIm</strong></span>
+</div>
+""", unsafe_allow_html=True)
