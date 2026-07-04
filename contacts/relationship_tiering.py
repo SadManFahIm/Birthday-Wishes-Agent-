@@ -683,8 +683,5 @@ if __name__ == "__main__":
               f"{t['current_tier']:<15} score={t['tier_score']}/100")
     print(f"\nChange log: {len(get_tier_change_log())} entries")
 
-else:
+if __name__ != "__main__":
     render_tiering_panel()
-
-
-streamlit run relationship_tiering.py
