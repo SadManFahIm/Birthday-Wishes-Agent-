@@ -557,4 +557,3 @@ if __name__ == "__main__":
 
 if __name__ != "__main__":
     render_dashboard()
-streamlit run mutual_connection_insights.py

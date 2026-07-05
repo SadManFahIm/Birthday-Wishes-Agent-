@@ -26,163 +26,124 @@ from langchain_openai import ChatOpenAI
 
 
 
-from notifications import send_summary
+# ── notifications (root level — file missing, using stub) ─────────────────────
+try:
+    from notifications import send_summary
+except ImportError:
+    def send_summary(*args, **kwargs): pass
 
+# ── platforms ─────────────────────────────────────────────────────────────────
 from platforms import (run_whatsapp_task, run_facebook_task,
-
                         run_instagram_task, run_linkedin_birthday_with_custom_wish)
+from platforms.twitter_birthday import (init_twitter_table, run_twitter_birthday_detection)
+from platforms.instagram_birthday_detector import InstagramBirthdayDetector
+from platforms.instagram_birthdays import save_detected_birthday
+from platforms.slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
 
+# ── ai ────────────────────────────────────────────────────────────────────────
+from ai.sentiment import analyze_sentiment, get_sentiment_reply, build_sentiment_instructions
+from ai.memory import (init_memory_table, save_contact_memory,
+                        get_contact_memory, build_memory_context,
+                        generate_memory_aware_wish, build_memory_instructions)
+from ai.wish_scorer import score_wish, generate_scored_wish, build_scorer_instructions
+from ai.tone_matching import detect_tone, get_tone_matched_reply, build_tone_matching_instructions
+from ai.occasion_detection import run_occasion_detection
+from ai.multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
+from ai.rag_memory import (init_rag_memory, save_memory_to_rag,
+                             retrieve_relevant_memory, generate_rag_wish,
+                             migrate_from_sqlite_memory)
+from ai.personality_profiling import (init_personality_table, analyze_personality,
+                                       get_personality_profile,
+                                       build_personality_instructions,
+                                       run_personality_profiling)
+from ai.predictive_birthday import (init_predicted_birthday_table,
+                                     run_predictive_birthday,
+                                     send_todays_predicted_wishes,
+                                     get_prediction_stats,
+                                     get_todays_predicted_birthdays)
+from ai.emotional_intelligence import (init_eq_table, score_reply, save_eq_score,
+                                        get_avg_eq_score, build_eq_instructions, get_eq_stats)
+from ai.ab_testing import (init_ab_table, get_ab_variant, log_ab_send,
+                             log_ab_reply, get_ab_results, generate_ab_wish)
+
+# ── automation ────────────────────────────────────────────────────────────────
+from automation.auto_timezone_scheduler import (init_scheduler_table,
+                                                 run_auto_timezone_scheduler,
+                                                 get_pending_scheduled_wishes)
+from automation.auto_connect import (init_connections_table, get_connects_today,
+                                      log_connection_request, build_auto_connect_task)
+from automation.post_engagement import (init_engagement_table, log_engagement, run_post_engagement)
+from automation.birthday_reminder import (init_reminder_table, run_birthday_reminder)
+from automation.group_birthday import (init_group_birthday_table, run_group_birthday_detection)
+from automation.auto_reply_followup import (init_auto_reply_table, run_auto_reply_followup)
+from automation.birthday_miss_tracker import (init_miss_table, run_miss_tracker, get_missed_contacts)
+from automation.personalized_connect import (init_connect_request_table,
+                                              run_personalized_connect, get_connect_stats)
+from automation.smart_followup import (init_smart_followup_table, run_smart_followup,
+                                        log_wish_for_followup, mark_reply_received)
+from automation.dm_campaign import (init_campaign_table, run_dm_campaign, get_campaign_stats)
+from automation.workflow_builder import (load_all_workflows, run_workflow)
+from automation.auto_pause_on_anomaly import (is_paused, log_error, log_success,
+                                               check_anomalies, resume_agent)
+
+# ── contacts ──────────────────────────────────────────────────────────────────
+from contacts.contact_notes import (init_notes_table, add_note, get_notes, build_notes_context)
+from contacts.connection_tracker import (init_tracker_table, log_interaction,
+                                          calculate_strength, get_top_connections,
+                                          get_fading_connections, sync_from_history)
+from contacts.relationship_health import (init_health_table, run_relationship_health_report)
+from contacts.decay_alert import (init_decay_table, run_decay_alert,
+                                   get_fading_contacts, build_decay_alert_instructions)
+from contacts.contact_categorizer import (init_categorizer_table, run_contact_categorizer,
+                                           get_contacts_by_category, get_category_stats)
+
+# ── security ──────────────────────────────────────────────────────────────────
+from security.proxy_rotation import (init_proxy_table, get_next_proxy,
+                                      build_proxy_browser_config,
+                                      mark_proxy_failed, mark_proxy_success)
+from security.two_factor_auth import (is_2fa_enabled, get_2fa_instructions,
+                                       get_totp_code, get_2fa_status)
+from security.vpn_switch import (init_vpn_table, auto_switch_vpn,
+                                   check_and_switch_if_blocked, get_vpn_status)
+
+# ── notifications ─────────────────────────────────────────────────────────────
+from notifications.email_digest import send_weekly_digest
+from notifications.voice import generate_voice
+from notifications.voice_to_text import run_voice_reply_task as run_voice_to_text_task
+
+# ── multi_account ─────────────────────────────────────────────────────────────
+from multi_account.multi_account import (init_accounts_table, register_account,
+                                          get_enabled_accounts, get_account_stats,
+                                          run_multi_account_birthday_detection,
+                                          run_multi_account_reply)
+
+# ── detection ─────────────────────────────────────────────────────────────────
+from detection.best_time_connect import (init_activity_table, get_best_send_time,
+                                          run_best_time_analysis, build_timing_notice)
+
+# ── root-level files (still in root, not moved) ───────────────────────────────
 from wish_generator import generate_custom_wish
-
 from followup import (init_followup_table, schedule_followup,
-
-                       get_pending_followups, mark_followup_sent,
-
-                       build_followup_task)
-
+                       get_pending_followups, mark_followup_sent, build_followup_task)
 from calendar_export import export_birthday_calendar
-
-from auto_timezone_scheduler import (init_scheduler_table, run_auto_timezone_scheduler, get_pending_scheduled_wishes)
-
 from smart_timing import should_send_now, build_timing_instructions
 
-from sentiment import analyze_sentiment, get_sentiment_reply, build_sentiment_instructions
+from contacts.relationship_tiering import log_signal, auto_adjust_tier
 
-from auto_connect import (init_connections_table, get_connects_today,
+# reply পাওয়ার পরে
+log_signal(contact_id, contact_name, "reply_speed_hrs", hours)
+log_signal(contact_id, contact_name, "reply_word_count", word_count)
+auto_adjust_tier(contact_id, contact_name)
 
-                           log_connection_request, build_auto_connect_task)
+from contacts.mutual_connection_insights import get_wish_mention, save_insights_batch
 
-from memory import (init_memory_table, save_contact_memory,
+# LinkedIn scrape এর পরে
+save_insights_batch(contact_id, contact_name, scraped_insights)
 
-                    get_contact_memory, build_memory_context,
-
-                    generate_memory_aware_wish, build_memory_instructions)
-
-from post_engagement import (init_engagement_table, log_engagement,
-
-                              run_post_engagement)
-
-from birthday_reminder import (init_reminder_table, run_birthday_reminder)
-
-from contact_notes import (init_notes_table, add_note, get_notes, build_notes_context)
-
-from wish_scorer import score_wish, generate_scored_wish, build_scorer_instructions
-
-from group_birthday import (init_group_birthday_table, run_group_birthday_detection)
-
-from connection_tracker import (init_tracker_table, log_interaction,
-
-                                calculate_strength, get_top_connections,
-
-                                get_fading_connections, sync_from_history)
-
-from auto_reply_followup import (init_auto_reply_table, run_auto_reply_followup)
-
-from tone_matching import detect_tone, get_tone_matched_reply, build_tone_matching_instructions
-
-from occasion_detection import run_occasion_detection
-
-from multilang_reply import detect_language, get_multilang_reply, build_multilang_instructions
-
-from relationship_health import (init_health_table, run_relationship_health_report)
-from twitter_birthday import (init_twitter_table, run_twitter_birthday_detection)
-from instagram_birthday_detector import InstagramBirthdayDetector
-from instagram_birthdays import save_detected_birthday
-from birthday_miss_tracker import (init_miss_table, run_miss_tracker, get_missed_contacts)
-from decay_alert import (init_decay_table, run_decay_alert, get_fading_contacts, build_decay_alert_instructions)
-
-from best_time_connect import (init_activity_table, get_best_send_time,
-
-                               run_best_time_analysis, build_timing_notice)
-
-from dm_campaign import (init_campaign_table, run_dm_campaign, get_campaign_stats)
-
-from contact_categorizer import (init_categorizer_table, run_contact_categorizer,
-
-                                  get_contacts_by_category, get_category_stats)
-
-from ab_testing import (init_ab_table, get_ab_variant, log_ab_send,
-
-                         log_ab_reply, get_ab_results, generate_ab_wish)
-
-from rag_memory import (init_rag_memory, save_memory_to_rag,
-
-                         retrieve_relevant_memory, generate_rag_wish,
-
-                         migrate_from_sqlite_memory)
-
-from voice_to_text import run_voice_reply_task as run_voice_to_text_task
-
-from email_digest import send_weekly_digest
-
-from voice import generate_voice
-
-from personalized_connect import (init_connect_request_table, run_personalized_connect, get_connect_stats)
-
-from smart_followup import (init_smart_followup_table, run_smart_followup, log_wish_for_followup, mark_reply_received)
-
-from slack_birthday_bot import (init_slack_table, run_slack_birthday_bot)
-
-from proxy_rotation import (init_proxy_table, get_next_proxy, build_proxy_browser_config, mark_proxy_failed, mark_proxy_success)
-
-from two_factor_auth import (is_2fa_enabled, get_2fa_instructions, get_totp_code, get_2fa_status)
-
-from vpn_switch import (init_vpn_table, auto_switch_vpn, check_and_switch_if_blocked, get_vpn_status)
-
-from personality_profiling import (init_personality_table, analyze_personality,
-
-                                   get_personality_profile,
-
-                                   build_personality_instructions,
-
-                                   run_personality_profiling)
-
-from predictive_birthday import (
-
-    init_predicted_birthday_table,
-
-    run_predictive_birthday,
-
-    send_todays_predicted_wishes,
-
-    get_prediction_stats,
-
-    get_todays_predicted_birthdays,
-
-)
-
-from emotional_intelligence import (
-
-    init_eq_table,
-
-    score_reply,
-
-    save_eq_score,
-
-    get_avg_eq_score,
-
-    build_eq_instructions,
-
-    get_eq_stats,
-
-)
-
-from multi_account import (
-
-    init_accounts_table,
-
-    register_account,
-
-    get_enabled_accounts,
-
-    get_account_stats,
-
-    run_multi_account_birthday_detection,
-
-    run_multi_account_reply,
-
-)
-
+# Wish generate করার আগে
+mention = get_wish_mention(contact_id, contact_name)
+if mention["found"]:
+    prompt += mention["prompt_snippet"]
 
 
 # ----------------------------------------------
