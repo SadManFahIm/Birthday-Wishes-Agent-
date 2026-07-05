@@ -551,9 +551,8 @@ if __name__ == "__main__":
         if result["found"]:
             ins = result["insight"]
             print(f"  {ins['icon']} {cname:<20} [{ins['label']}] {ins['value']}")
-            print(f"     → \"{result['mention_text']}\"")
+            print(f"     -> \"{result['mention_text']}\"")
         else:
-            print(f"  — {cname}: no insights")
-
-if __name__ != "__main__":
+            print(f"  - {cname}: no insights")
+else:
     render_dashboard()
