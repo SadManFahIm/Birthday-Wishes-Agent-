@@ -1,0 +1,33 @@
+{
+  "version": "0.2",
+  "words": [
+    "Alles",
+    "anniversaire",
+    "bday",
+    "BUET",
+    "Chowdhury",
+    "coro",
+    "cumple",
+    "cumpleaos",
+    "Feliz",
+    "Grameenphone",
+    "Gute",
+    "Hossain",
+    "itype",
+    "Joyeux",
+    "Karim",
+    "Nadia",
+    "Rakib",
+    "recruitpass",
+    "Selamat",
+    "selectbox",
+    "tahun",
+    "Tanvir",
+    "totp",
+    "ulang",
+    "ultah",
+    "workpass",
+    "পাওয়"
+  ],
+  "ignorePaths": ["**/*.json", "**/__pycache__/**"]
+}
