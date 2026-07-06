@@ -6,9 +6,12 @@
     "bday",
     "BUET",
     "Chowdhury",
+    "checkin",
     "coro",
     "cumple",
     "cumpleaos",
+    "edate",
+    "etype",
     "Feliz",
     "Grameenphone",
     "Gute",
@@ -16,11 +19,15 @@
     "itype",
     "Joyeux",
     "Karim",
+    "Kash",
+    "lastrowid",
     "Nadia",
+    "Pathao",
     "Rakib",
     "recruitpass",
     "Selamat",
     "selectbox",
+    "ShopUp",
     "tahun",
     "Tanvir",
     "totp",
@@ -29,5 +36,5 @@
     "workpass",
     "পাওয়"
   ],
-  "ignorePaths": ["**/*.json", "**/__pycache__/**"]
+  "ignorePaths": ["**/__pycache__/**"]
 }
