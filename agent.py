@@ -129,21 +129,7 @@ from calendar_export import export_birthday_calendar
 from smart_timing import should_send_now, build_timing_instructions
 
 from contacts.relationship_tiering import log_signal, auto_adjust_tier
-
-# reply পাওয়ার পরে
-log_signal(contact_id, contact_name, "reply_speed_hrs", hours)
-log_signal(contact_id, contact_name, "reply_word_count", word_count)
-auto_adjust_tier(contact_id, contact_name)
-
 from contacts.mutual_connection_insights import get_wish_mention, save_insights_batch
-
-# LinkedIn scrape এর পরে
-save_insights_batch(contact_id, contact_name, scraped_insights)
-
-# Wish generate করার আগে
-mention = get_wish_mention(contact_id, contact_name)
-if mention["found"]:
-    prompt += mention["prompt_snippet"]
 
 
 # ----------------------------------------------
@@ -2428,4 +2414,6 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
+
 
