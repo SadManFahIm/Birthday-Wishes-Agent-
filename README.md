@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-7.0-brightgreen)
+![Version](https://img.shields.io/badge/version-8.0-brightgreen)
 ![LangChain](https://img.shields.io/badge/LangChain-powered-blueviolet)
 ![Gemini](https://img.shields.io/badge/Gemini-2.5%20Pro-orange)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Cloud-red)
@@ -10,7 +10,7 @@
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green)
 ![Platforms](https://img.shields.io/badge/platforms-6-blue)
 
-An intelligent, production-ready AI agent pipeline that manages birthday wishes and life event congratulations across LinkedIn, WhatsApp, Facebook, Instagram, Twitter/X, and Slack — with memory, sentiment awareness, tone matching, multi-language support, voice messages, personality profiling, emotional intelligence, predictive birthdays, multi-account support, Docker, CI/CD, cloud deployment, proxy rotation, VPN auto-switch, 2FA support, a unified command center dashboard, real-time wish preview, and full contact interaction timelines.
+An intelligent, production-ready AI agent pipeline that manages birthday wishes and life event congratulations across LinkedIn, WhatsApp, Facebook, Instagram, Twitter/X, and Slack — with memory, sentiment awareness, tone matching, multi-language support, voice messages, personality profiling, emotional intelligence, predictive birthdays, multi-account support, Docker, CI/CD, cloud deployment, proxy rotation, VPN auto-switch, 2FA support, a unified command center dashboard, real-time wish preview, full contact interaction timelines, VIP contact flagging, smart emoji calibration, conditional workflow builder, platform ROI comparison, and AI-powered wish style memory.
 
 ---
 
@@ -53,6 +53,27 @@ This project demonstrates how to build a sophisticated, multi-feature AI agent u
 | **LinkedIn Birthday Detection** | Finds contacts with birthdays today and sends personalized wishes |
 | **LinkedIn Reply to Wishes** | Scans unread messages and replies to birthday wishes |
 | **Multi-Platform Support** | Extends all features to WhatsApp, Facebook Messenger, Instagram DM, Twitter/X, and Slack |
+
+### 🚀 v8.0 — Intelligence & Automation 🆕
+
+| Feature | Description |
+| ------- | ----------- |
+| **Wish Style Memory** | Tracks which style (funny/formal/poetic/warm/motivational/nostalgic) was used per contact each year and always picks a fresh angle — wishes never feel repetitive |
+| **Context-Aware Opening Line** | Scans contact's recent LinkedIn activity (new job, promotion, product launch) and generates a hyper-specific opening line referencing it naturally |
+| **Multi-Wish Variant Generator** | Generates 3 distinct variants (formal/casual/funny) side-by-side with live personalization scores — pick, edit, or regenerate individually |
+| **Smart Emoji Calibration** | Learns each contact's emoji density from reply history and calibrates the wish accordingly (none/minimal/moderate/heavy/very_heavy) |
+| **Conditional Workflow Builder** | Visual IF-THEN-ELSE rule editor — build custom automation rules (e.g. "no reply → followup → decay alert") from the dashboard without touching code |
+| **Batch Approve Queue** | All AI-generated wishes land in a morning review queue — bulk approve/reject/edit/send in one screen |
+| **Smart Send-Time Optimizer** | Learns per-platform peak activity hours from reply timestamps and schedules wishes at each contact's personal active window |
+| **Auto-Pause on Anomaly** | Monitors errors in real-time — auto-pauses all tasks on failure spikes or rate-limit storms; sends Telegram alert; requires manual resume |
+| **Weekly/Monthly Insight Report** | Auto-generated summary: best platform, best wish style, score trends, fastest repliers, relationship movement, key takeaways |
+| **Reply Sentiment Trend** | Tracks reply tone (excited→positive→neutral→cold→no_reply) per contact over time; surfaces declining relationships early |
+| **Platform ROI Comparison** | Measures effort vs engagement across all 6 platforms — scores each on ROI and recommends where to double down, maintain, or reduce |
+| **Personalization Score Trend** | Monthly/weekly chart of wish quality; per-contact drill-down with component breakdown; identifies weakest scoring areas |
+| **Relationship Tiering Auto-Adjust** | Automatically moves contacts between Close Friend/Colleague/Acquaintance based on reply speed, depth, frequency, and sentiment |
+| **Mutual Connection Insights** | Detects shared connections, interests, alumni ties, and past companies; generates a natural sentence to weave into the wish |
+| **Life Event Timeline Merge** | Unified "important dates" calendar per contact: birthday, promotion, job change, work anniversary, graduation, marriage, and more |
+| **VIP Contact Flagging** | Mark contacts as Platinum/Gold/Silver VIP — enforces minimum personalization score, mandatory manual review, optional voice note and multi-platform sending |
 
 ### 🎛️ Command Center & Live Preview 🆕
 
@@ -295,7 +316,8 @@ Birthday-Wishes-Agent/
 
 | Branch | Status | What was added |
 | ------ | ------ | -------------- |
-| `main` | 🟢 Active (v7.0) | All features merged |
+| `main` | 🟢 Active (v8.0) | All features merged |
+| `8.0` | 🟡 In Progress | Wish style memory, context opener, variant generator, emoji calibration, workflow builder, batch queue, send-time optimizer, auto-pause, insight report, sentiment trend, platform ROI, score trend, tier auto-adjust, mutual insights, life event timeline, VIP flagging |
 | `7.0` | ✅ Merged | Wish personalization scorer (auto-retry), Unified Command Center, Real-time Wish Preview, Contact Timeline View |
 | `6.0` | ✅ Merged | AI model selector, A/B auto-learning, voice wish, decay alert, miss tracker, Twitter/X, Slack, auto timezone, smart follow-up, personalized connect, 2FA, proxy rotation, VPN auto-switch |
 | `5.0` | ✅ Stable tag | Relationship health score, RAG memory, A/B testing, web app, browser extension |
@@ -708,7 +730,36 @@ The **Real-time Wish Preview** dashboard (`wish_preview.py`) shows this score li
 
 ## 🔄 Changelog
 
-### v7.0 (current)
+### v8.0 (current — in progress)
+
+**🚀 AI & Intelligence**
+- ✅ **Wish Style Memory** — tracks past styles per contact, always picks a fresh angle
+- ✅ **Context-Aware Opening Line** — LinkedIn activity → hyper-specific wish opener
+- ✅ **Multi-Wish Variant Generator** — formal/casual/funny side-by-side with live scores
+- ✅ **Smart Emoji Calibration** — learns emoji density from reply history
+
+**⚙️ Automation**
+- ✅ **Conditional Workflow Builder** — visual IF-THEN-ELSE rule editor, no code needed
+- ✅ **Batch Approve Queue** — morning wish review, bulk approve/reject/edit/send
+- ✅ **Smart Send-Time Optimizer** — per-platform activity learning, peak-hour scheduling
+- ✅ **Auto-Pause on Anomaly** — self-pausing agent on failure spikes, Telegram alert
+
+**📊 Analytics & Insights**
+- ✅ **Weekly/Monthly Insight Report** — auto-generated performance summary
+- ✅ **Reply Sentiment Trend** — excited→cold tone tracking, decline alerts
+- ✅ **Platform ROI Comparison** — effort vs engagement matrix, focus recommendations
+- ✅ **Personalization Score Trend** — monthly wish quality chart, component breakdown
+
+**📋 Contact & Relationship**
+- ✅ **Relationship Tiering Auto-Adjust** — dynamic Close Friend/Colleague/Acquaintance
+- ✅ **Mutual Connection Insights** — shared context → natural wish mention
+- ✅ **Life Event Timeline Merge** — unified important dates calendar per contact
+- ✅ **VIP Contact Flagging** — Platinum/Gold/Silver, mandatory review, voice note
+
+**🏗️ Project Structure**
+- ✅ **Full folder restructure** — 85+ files into `ai/`, `automation/`, `contacts/`, `security/`, `dashboards/`, `detection/`, `notifications/`, `multi_account/`, `config/`
+
+### v7.0 ✅
 
 **🎯 AI & Intelligence**
 - ✅ **Wish Personalization Scorer** — scores every wish 1–10 on name, job/company, industry, memory, uniqueness, length, and warmth; auto-retries with a stronger prompt if below 6
