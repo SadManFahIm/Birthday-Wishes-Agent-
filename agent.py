@@ -132,6 +132,7 @@ from contacts.relationship_tiering import log_signal, auto_adjust_tier
 from contacts.mutual_connection_insights import get_wish_mention, save_insights_batch
 from contacts.vip_contact_flagging import is_vip, get_vip_wish_config, queue_vip_wish
 
+
 # ----------------------------------------------
 
 # 1. LOGGING SETUP
@@ -2414,5 +2415,6 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
 
