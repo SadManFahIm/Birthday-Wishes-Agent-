@@ -131,6 +131,11 @@ from smart_timing import should_send_now, build_timing_instructions
 from contacts.relationship_tiering import log_signal, auto_adjust_tier
 from contacts.mutual_connection_insights import get_wish_mention, save_insights_batch
 from contacts.vip_contact_flagging import is_vip, get_vip_wish_config, queue_vip_wish
+from ai.self_improving_agent import run_auto_tune_cycle, log_wish_sent, log_reply_received
+from ai.multi_model_consensus import generate_consensus_wish
+from ai.agent_session_memory import start_session, end_session, log_task_outcome, should_skip_platform
+from platforms.whatsapp_business_api import send_text_message, send_template_message
+from telegram_birthday_bot import (init_telegram_birthday_table, run_telegram_birthday_bot, send_telegram_birthday_wish)
 
 
 # ----------------------------------------------
@@ -2281,6 +2286,8 @@ async def main():
     init_twitter_table()
 
     init_slack_table()
+
+    init_telegram_birthday_table()
 
     init_vpn_table()
     
