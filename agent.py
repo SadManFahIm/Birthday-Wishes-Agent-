@@ -136,6 +136,7 @@ from ai.multi_model_consensus import generate_consensus_wish
 from ai.agent_session_memory import start_session, end_session, log_task_outcome, should_skip_platform
 from platforms.whatsapp_business_api import send_text_message, send_template_message
 from telegram_birthday_bot import (init_telegram_birthday_table, run_telegram_birthday_bot, send_telegram_birthday_wish)
+from notifications.discord_birthday_bot import (init_discord_birthday_table, run_discord_birthday_bot, register_member_birthday)
 
 
 # ----------------------------------------------
@@ -2290,6 +2291,8 @@ async def main():
     init_telegram_birthday_table()
 
     init_vpn_table()
+
+    init_discord_birthday_table()
     
     init_accounts_table()           #  Multi-Account DB init
 
