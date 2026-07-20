@@ -1,0 +1,85 @@
+---
+# k8s/agent.yaml
+# Agent worker — runs daily at 8:00 AM UTC
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: birthday-agent-worker
+  namespace: birthday-agent
+spec:
+  schedule: "0 8 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app: birthday-agent-worker
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: agent
+              image: sadmanfahim/birthday-agent:9.0
+              imagePullPolicy: IfNotPresent
+              command: ["python", "agent.py"]
+              envFrom:
+                - configMapRef:
+                    name: birthday-agent-config
+                - secretRef:
+                    name: birthday-agent-secrets
+              resources:
+                requests:
+                  cpu: "500m"
+                  memory: "512Mi"
+                limits:
+                  cpu: "2000m"
+                  memory: "1Gi"
+
+---
+# Queue worker — processes Redis task queue continuously
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: birthday-agent-queue-worker
+  namespace: birthday-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: birthday-agent-queue-worker
+  template:
+    metadata:
+      labels:
+        app: birthday-agent-queue-worker
+    spec:
+      containers:
+        - name: worker
+          image: sadmanfahim/birthday-agent:9.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-c", "
+from redis_cache import dequeue, complete_task;
+import time, json;
+print('[Worker] Queue worker started');
+while True:
+    task = dequeue('wishes', block=True);
+    if task:
+        print(f'[Worker] Processing {task[\"task_type\"]}');
+        complete_task(task['task_id'], result='ok');
+    time.sleep(0.1)
+"]
+          envFrom:
+            - configMapRef:
+                name: birthday-agent-config
+            - secretRef:
+                name: birthday-agent-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"

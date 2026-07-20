@@ -1,0 +1,96 @@
+---
+# k8s/api.yaml
+# FastAPI backend — 2 replicas, HPA-ready
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: birthday-agent-api
+  namespace: birthday-agent
+  labels:
+    app: birthday-agent-api
+    version: "9.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: birthday-agent-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: birthday-agent-api
+        version: "9.0"
+    spec:
+      containers:
+        - name: api
+          image: sadmanfahim/birthday-agent:9.0
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "fastapi_backend:app",
+                    "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: birthday-agent-config
+            - secretRef:
+                name: birthday-agent-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: birthday-agent-api
+  namespace: birthday-agent
+spec:
+  selector:
+    app: birthday-agent-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# Horizontal Pod Autoscaler — scale API 2-6 pods on CPU
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: birthday-agent-api-hpa
+  namespace: birthday-agent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: birthday-agent-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
