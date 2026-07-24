@@ -2,21 +2,22 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-8.0-brightgreen)
+![Version](https://img.shields.io/badge/version-9.0-brightgreen)
 ![LangChain](https://img.shields.io/badge/LangChain-powered-blueviolet)
 ![Gemini](https://img.shields.io/badge/Gemini-2.5%20Pro-orange)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Cloud-red)
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326CE5)
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green)
-![Platforms](https://img.shields.io/badge/platforms-6-blue)
+![Platforms](https://img.shields.io/badge/platforms-9%2B-blue)
 
-An intelligent, production-ready AI agent pipeline that manages birthday wishes and life event congratulations across LinkedIn, WhatsApp, Facebook, Instagram, Twitter/X, and Slack — with memory, sentiment awareness, tone matching, multi-language support, voice messages, personality profiling, emotional intelligence, predictive birthdays, multi-account support, Docker, CI/CD, cloud deployment, proxy rotation, VPN auto-switch, 2FA support, a unified command center dashboard, real-time wish preview, full contact interaction timelines, VIP contact flagging, smart emoji calibration, conditional workflow builder, platform ROI comparison, and AI-powered wish style memory.
+An intelligent, production-ready AI agent pipeline that manages birthday wishes and life event congratulations across LinkedIn, WhatsApp, Facebook, Instagram, Twitter/X, Slack, Telegram, Discord, and regional Asian platforms — with memory, sentiment awareness, tone matching, multi-language support, voice messages and voice cloning, personality profiling, emotional intelligence, predictive birthdays, multi-account support, Docker, Kubernetes, CI/CD, cloud deployment, proxy rotation, VPN auto-switch, 2FA support, a unified command center dashboard, real-time wish preview, full contact interaction timelines, VIP contact flagging, smart emoji calibration, conditional workflow builder, platform ROI comparison, AI-powered wish style memory, a self-improving agent loop, multi-model consensus, and a FastAPI + PostgreSQL + Redis backend built to scale.
 
 ---
 
 ## 📝 Introduction
 
-This project demonstrates how to build a sophisticated, multi-feature AI agent using Python, LangChain, and browser automation. What started as a simple LinkedIn reply bot has grown into a comprehensive relationship management system across six social platforms — now with enterprise-grade security, fully automatic timezone scheduling, AI-powered auto-learning, live personalization scoring, and a single command center to control everything.
+This project demonstrates how to build a sophisticated, multi-feature AI agent using Python, LangChain, and browser automation. What started as a simple LinkedIn reply bot has grown into a comprehensive relationship management system across nine-plus social platforms — now with enterprise-grade security, fully automatic timezone scheduling, AI-powered auto-learning, live personalization scoring, a single command center to control everything, and a v9.0 push into autonomy (a self-improving agent loop, multi-model consensus), richer media (voice cloning, AI video messages), and production infrastructure (FastAPI backend, PostgreSQL, Redis, Kubernetes).
 
 ---
 
@@ -54,7 +55,30 @@ This project demonstrates how to build a sophisticated, multi-feature AI agent u
 | **LinkedIn Reply to Wishes** | Scans unread messages and replies to birthday wishes |
 | **Multi-Platform Support** | Extends all features to WhatsApp, Facebook Messenger, Instagram DM, Twitter/X, and Slack |
 
-### 🚀 v8.0 — Intelligence & Automation 🆕
+### 🧬 v9.0 — Autonomy, Rich Media & Scale 🆕
+
+| Feature | Description |
+| ------- | ----------- |
+| **Self-Improving Agent** | Reviews reply outcomes and past wish performance, then automatically tunes its own prompts and style choices over time — no manual re-tuning needed |
+| **Multi-Model Consensus** | Runs a wish through multiple LLMs (Gemini, GPT-4o, and others) and reconciles their outputs into a single, higher-confidence result before sending |
+| **Agent Session Memory** | Persists the agent's own reasoning/session state across restarts, so multi-step tasks (e.g. a paused batch run) resume where they left off |
+| **Voice Cloning** | Clones the user's own voice (with consent) to generate birthday voice notes that sound like them, instead of a generic TTS voice |
+| **AI Video Message** | Generates a short, personalized video birthday message per contact |
+| **Gift Suggestion Engine** | Suggests a gift idea per contact based on their profile, interests, and relationship history |
+| **WhatsApp Business API** | Moves WhatsApp integration from browser automation to the official WhatsApp Business API for reliable, ToS-compliant sending |
+| **Telegram Birthday Bot** | Dedicated Telegram bot for birthday detection, wishing, and replies |
+| **Discord Birthday Bot** | Discord bot for birthday detection and server/DM birthday announcements |
+| **Asian Platforms Support** | Adds birthday detection and wishing for regional platforms popular in Asia (e.g. WeChat, LINE, KakaoTalk) |
+| **Relationship Graph Dashboard** | Interactive network graph visualizing how contacts connect to each other and to the user |
+| **Revenue Attribution Dashboard** | For business use cases — attributes downstream revenue/deals back to specific wishes and platforms |
+| **Network Health Score Dashboard** | Single aggregate score for the overall health of the user's network, trended over time |
+| **FastAPI Backend** | Dedicated FastAPI service exposing the agent's functionality as a REST API, decoupled from the Streamlit dashboards |
+| **Next.js Web App** | New `webapp/` frontend rebuilt in Next.js for a faster, more modern web UI |
+| **PostgreSQL Migration** | Migrates persistent storage from SQLite to PostgreSQL for multi-user, production-scale deployments |
+| **Redis Cache** | Adds a Redis caching layer for faster reads on contact data, scores, and session state |
+| **Kubernetes Support** | Adds a `k8s/` manifest set for deploying the full stack (agent, backend, web app, database, cache) on Kubernetes |
+
+### 🚀 v8.0 — Intelligence & Automation
 
 | Feature | Description |
 | ------- | ----------- |
@@ -168,6 +192,10 @@ This project demonstrates how to build a sophisticated, multi-feature AI agent u
 | **Instagram** | Birthday replies, birthday post detection |
 | **Twitter/X** | Birthday mention detection, auto-reply to birthday tweets |
 | **Slack** | Birthday detection from workspace profiles, DM + channel announcements |
+| **WhatsApp Business API** 🆕 | Official API-based birthday replies and voice messages (replaces browser automation) |
+| **Telegram** 🆕 | Birthday detection, wishing, and replies via a dedicated Telegram bot |
+| **Discord** 🆕 | Birthday detection and DM/server birthday announcements via a Discord bot |
+| **Asian Platforms** 🆕 | Birthday detection and wishing on regional platforms (e.g. WeChat, LINE, KakaoTalk) |
 
 ### 📋 Contact Management
 
@@ -220,8 +248,15 @@ Birthday-Wishes-Agent/
 ├── agent.py                     # Main agent — all tasks, toggles, scheduler
 │
 ├── ── AI & Personalization ──
+├── ai/
+│   ├── self_improving_agent.py       # Tunes prompts/style from past outcomes 🆕
+│   ├── multi_model_consensus.py      # Reconciles output across multiple LLMs 🆕
+│   ├── agent_session_memory.py       # Persists agent session/task state 🆕
+│   ├── voice_cloning.py              # Clones user's voice for voice notes 🆕
+│   ├── video_message.py              # Generates personalized AI video wishes 🆕
+│   └── gift_suggestion.py            # Suggests a gift idea per contact 🆕
 ├── wish_scorer.py                    # Wish quality scorer (1-10) with auto-retry
-├── wish_personalization_score.py     # Wish personalization scorer (1-10) with auto-retry 🆕
+├── wish_personalization_score.py     # Wish personalization scorer (1-10) with auto-retry
 ├── sentiment.py                      # Sentiment analysis (happy/sad/stressed/lonely)
 ├── tone_matching.py                  # Communication tone detection and mirroring
 ├── multilang_reply.py                # Multi-language reply (17 languages)
@@ -256,10 +291,14 @@ Birthday-Wishes-Agent/
 │
 ├── ── Platforms ──
 ├── platforms/
-│   ├── linkedin.py              # LinkedIn with AI wishes + relationship scoring
-│   ├── whatsapp.py              # WhatsApp Web with voice message support
-│   ├── facebook.py              # Facebook Messenger
-│   └── instagram.py            # Instagram DM
+│   ├── linkedin.py                    # LinkedIn with AI wishes + relationship scoring
+│   ├── whatsapp.py                    # WhatsApp Web with voice message support
+│   ├── whatsapp_business_api.py       # Official WhatsApp Business API integration 🆕
+│   ├── facebook.py                    # Facebook Messenger
+│   ├── instagram.py                   # Instagram DM
+│   ├── telegram_birthday.py           # Telegram birthday bot 🆕
+│   ├── discord_birthday_bot.py        # Discord birthday bot 🆕
+│   └── asian_platforms.py             # WeChat / LINE / KakaoTalk support 🆕
 ├── twitter_birthday.py          # Twitter/X birthday mention detection
 ├── slack_birthday_bot.py        # Slack workspace birthday bot
 │
@@ -277,23 +316,33 @@ Birthday-Wishes-Agent/
 ├── multi_account.py             # Manage and rotate LinkedIn accounts
 │
 ├── ── Dashboards ──
-├── command_center.py            # Unified Command Center — control, triggers, live status, logs 🆕
-├── wish_preview.py               # Real-time Wish Preview — AI generate + edit + live score + platform render 🆕
-├── contact_timeline.py           # Contact Timeline View — full interaction history per contact 🆕
+├── dashboards/
+│   ├── relationship_graph.py         # Interactive contact relationship network graph 🆕
+│   ├── revenue_attribution.py        # Attributes revenue/deals back to wishes 🆕
+│   └── network_health_score.py       # Aggregate network health score, trended 🆕
+├── command_center.py            # Unified Command Center — control, triggers, live status, logs
+├── wish_preview.py               # Real-time Wish Preview — AI generate + edit + live score + platform render
+├── contact_timeline.py           # Contact Timeline View — full interaction history per contact
 ├── dashboard.py                  # Streamlit control dashboard
 ├── analytics.py                  # Analytics dashboard with charts
 ├── profile_cards.py              # Contact profile cards
 ├── mobile_app.py                 # Mobile app for Streamlit Cloud
 ├── realtime_dashboard.py         # FastAPI + WebSocket live dashboard
 ├── ab_dashboard.py               # A/B testing dashboard
-├── webapp/                       # FastAPI + React web app
 ├── extension/                    # LinkedIn sidebar browser extension
 ├── onboarding.py                 # First-time setup wizard
 ├── theme_toggle.py               # Dark/Light mode helper
 │
+├── ── Backend & Data ──
+├── fastapi_backend.py           # FastAPI service exposing agent functionality as a REST API 🆕
+├── webapp/                       # Next.js web app (rebuilt from React) 🆕
+├── postgres_migration.py        # Migrates storage from SQLite to PostgreSQL 🆕
+├── redis_cache.py               # Redis caching layer for contacts, scores, session state 🆕
+│
 ├── ── DevOps ──
 ├── Dockerfile
 ├── docker-compose.yml
+├── k8s/                          # Kubernetes manifests for the full stack 🆕
 ├── .github/workflows/ci-cd.yml  # GitHub Actions pipeline
 ├── deploy/aws/                  # AWS deployment configs
 ├── deploy/gcp/                  # GCP deployment configs
@@ -303,7 +352,7 @@ Birthday-Wishes-Agent/
 ├── requirements.txt
 │
 ├── agent.log                    # Live log (auto-generated)
-├── agent_history.db              # SQLite database (auto-generated)
+├── agent_history.db              # SQLite database (legacy; see postgres_migration.py)
 ├── birthdays.ics                # Exported calendar (auto-generated)
 ├── audio_messages/              # Voice files (auto-generated)
 ├── proxies.txt                  # Proxy list (optional)
@@ -316,8 +365,9 @@ Birthday-Wishes-Agent/
 
 | Branch | Status | What was added |
 | ------ | ------ | -------------- |
-| `main` | 🟢 Active (v8.0) | All features merged |
-| `8.0` | 🟡 In Progress | Wish style memory, context opener, variant generator, emoji calibration, workflow builder, batch queue, send-time optimizer, auto-pause, insight report, sentiment trend, platform ROI, score trend, tier auto-adjust, mutual insights, life event timeline, VIP flagging |
+| `main` | 🟢 Active (v9.0) | All features merged |
+| `9.0` | ✅ Merged | Self-improving agent, multi-model consensus, agent session memory, voice cloning, AI video message, gift suggestion, WhatsApp Business API, Telegram, Discord, Asian platforms, relationship graph, revenue attribution, network health score, FastAPI backend, Next.js web app, Postgres migration, Redis cache, Kubernetes support |
+| `8.0` | ✅ Merged | Wish style memory, context opener, variant generator, emoji calibration, workflow builder, batch queue, send-time optimizer, auto-pause, insight report, sentiment trend, platform ROI, score trend, tier auto-adjust, mutual insights, life event timeline, VIP flagging |
 | `7.0` | ✅ Merged | Wish personalization scorer (auto-retry), Unified Command Center, Real-time Wish Preview, Contact Timeline View |
 | `6.0` | ✅ Merged | AI model selector, A/B auto-learning, voice wish, decay alert, miss tracker, Twitter/X, Slack, auto timezone, smart follow-up, personalized connect, 2FA, proxy rotation, VPN auto-switch |
 | `5.0` | ✅ Stable tag | Relationship health score, RAG memory, A/B testing, web app, browser extension |
@@ -557,9 +607,12 @@ await run_scheduler()
 ### Option 3 — Streamlit Dashboards
 
 ```bash
-streamlit run command_center.py    # 🆕 Unified Command Center — start here
-streamlit run wish_preview.py      # 🆕 Real-time Wish Preview
-streamlit run contact_timeline.py  # 🆕 Contact Timeline View
+streamlit run command_center.py                # Unified Command Center — start here
+streamlit run wish_preview.py                   # Real-time Wish Preview
+streamlit run contact_timeline.py               # Contact Timeline View
+streamlit run dashboards/relationship_graph.py      # 🆕 Relationship Graph
+streamlit run dashboards/revenue_attribution.py     # 🆕 Revenue Attribution
+streamlit run dashboards/network_health_score.py    # 🆕 Network Health Score
 streamlit run dashboard.py
 streamlit run analytics.py
 streamlit run ab_dashboard.py
@@ -570,6 +623,19 @@ streamlit run mobile_app.py
 
 ```bash
 docker-compose up --build
+```
+
+### Option 5 — FastAPI Backend + Next.js Web App 🆕
+
+```bash
+uvicorn fastapi_backend:app --reload   # REST API on http://localhost:8000
+cd webapp && npm install && npm run dev  # Next.js app on http://localhost:3000
+```
+
+### Option 6 — Kubernetes 🆕
+
+```bash
+kubectl apply -f k8s/
 ```
 
 ---
@@ -730,7 +796,37 @@ The **Real-time Wish Preview** dashboard (`wish_preview.py`) shows this score li
 
 ## 🔄 Changelog
 
-### v8.0 (current — in progress)
+### v9.0 (current)
+
+**🧬 Autonomy & AI**
+- ✅ **Self-Improving Agent** — tunes its own prompts/style from past wish and reply outcomes
+- ✅ **Multi-Model Consensus** — reconciles output across Gemini, GPT-4o, and other models
+- ✅ **Agent Session Memory** — persists agent task/session state across restarts
+
+**🎬 Rich Media**
+- ✅ **Voice Cloning** — generates voice notes in the user's own cloned voice
+- ✅ **AI Video Message** — short personalized video birthday message per contact
+- ✅ **Gift Suggestion Engine** — suggests a gift idea per contact from profile/history
+
+**🌐 New Platforms**
+- ✅ **WhatsApp Business API** — official API integration, replacing browser automation
+- ✅ **Telegram Birthday Bot** — dedicated bot for detection, wishing, replies
+- ✅ **Discord Birthday Bot** — server/DM birthday detection and announcements
+- ✅ **Asian Platforms Support** — WeChat, LINE, KakaoTalk birthday detection and wishing
+
+**📊 Dashboards**
+- ✅ **Relationship Graph** — interactive network graph of contact connections
+- ✅ **Revenue Attribution** — attributes downstream revenue/deals to wishes and platforms
+- ✅ **Network Health Score** — aggregate, trended network health score
+
+**🏗️ Infrastructure & Scale**
+- ✅ **FastAPI Backend** — REST API for the agent, decoupled from the dashboards
+- ✅ **Next.js Web App** — `webapp/` rebuilt in Next.js
+- ✅ **PostgreSQL Migration** — production-scale storage, replacing SQLite
+- ✅ **Redis Cache** — caching layer for contacts, scores, and session state
+- ✅ **Kubernetes Support** — `k8s/` manifests for deploying the full stack
+
+### v8.0
 
 **🚀 AI & Intelligence**
 - ✅ **Wish Style Memory** — tracks past styles per contact, always picks a fresh angle
