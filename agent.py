@@ -137,6 +137,25 @@ from ai.agent_session_memory import start_session, end_session, log_task_outcome
 from platforms.whatsapp_business_api import send_text_message, send_template_message
 from telegram_birthday_bot import (init_telegram_birthday_table, run_telegram_birthday_bot, send_telegram_birthday_wish)
 from notifications.discord_birthday_bot import (init_discord_birthday_table, run_discord_birthday_bot, register_member_birthday)
+from platforms.asian_platforms import send_wechat_wish, send_line_wish, send_line_flex_wish
+from dashboards.relationship_graph import upsert_node, add_edge, get_fading_contacts
+from dashboards.revenue_attribution import log_attribution, get_top_contacts
+from dashboards.network_health_score import compute_health_score
+
+from postgres_migration import get_db
+from redis_cache import cache_get, cache_set, enqueue, cached, check_rate_limit
+
+
+
+@cached("contacts:list", ttl=120)
+def get_contacts(): ...
+
+task_id = enqueue("wishes", "birthday_wish", {"contact_id": "urn_rakib_001"})
+conn = get_db()
+
+from ai.voice_cloning import generate_voice_wish, get_audio_url
+from ai.video_message import generate_video_wish
+from ai.gift_suggestion import get_gift_suggestions
 
 
 # ----------------------------------------------
