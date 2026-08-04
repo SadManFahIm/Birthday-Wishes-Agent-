@@ -143,6 +143,9 @@ from dashboards.revenue_attribution import log_attribution, get_top_contacts
 from dashboards.network_health_score import compute_health_score
 
 from postgres_migration import get_db
+"""
+INTEGRATION EXAMPLES (reference only — not executed):
+
 from redis_cache import cache_get, cache_set, enqueue, cached, check_rate_limit
 
 
@@ -157,9 +160,6 @@ from ai.voice_cloning import generate_voice_wish, get_audio_url
 from ai.video_message import generate_video_wish
 from ai.gift_suggestion import get_gift_suggestions
 from model_config import generate, get_model, log_usage
-
-# Auto-select best model for task
-result = generate(prompt, task="wish_generation", mode="fast")
 wish   = result["text"]
 from churn_predictor import score_all_contacts, send_churn_alerts
 
@@ -180,8 +180,9 @@ print(f"Best time: {nsw['datetime_str']} ({nsw['hours_from_now']}h from now)")
 
 from platforms.whatsapp_status_watcher import process_status, handle_webhook_payload
 
-# Webhook এ আসলে
-results = handle_webhook_payload(webhook_payload, auto_act=True, dry_run=False)
+
+# results = handle_webhook_payload(webhook_payload, auto_act=True, dry_run=False)
+"""
 
 # ----------------------------------------------
 
@@ -2469,6 +2470,3 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
-
-
-
