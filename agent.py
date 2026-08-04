@@ -156,7 +156,32 @@ conn = get_db()
 from ai.voice_cloning import generate_voice_wish, get_audio_url
 from ai.video_message import generate_video_wish
 from ai.gift_suggestion import get_gift_suggestions
+from model_config import generate, get_model, log_usage
 
+# Auto-select best model for task
+result = generate(prompt, task="wish_generation", mode="fast")
+wish   = result["text"]
+from churn_predictor import score_all_contacts, send_churn_alerts
+
+preds  = score_all_contacts()
+alerts = send_churn_alerts(preds, dry_run=False, threshold="high")
+
+from roi_forecasting import run_forecast, get_forecast_summary
+
+forecasts = run_forecast()
+summary   = get_forecast_summary()
+print(f"${summary['total_pipeline_usd']:,.0f} pipeline")
+
+from engagement_calendar import next_send_window, compute_heatmap
+
+# Before sending to a contact
+nsw = next_send_window(contact_id="urn_rakib_001", platform="LinkedIn")
+print(f"Best time: {nsw['datetime_str']} ({nsw['hours_from_now']}h from now)")
+
+from platforms.whatsapp_status_watcher import process_status, handle_webhook_payload
+
+# Webhook এ আসলে
+results = handle_webhook_payload(webhook_payload, auto_act=True, dry_run=False)
 
 # ----------------------------------------------
 
