@@ -1,2 +1,8 @@
 .env
-.venv
+.venv__pycache__/
+*.pyc
+agent_history.db
+webapp/node_modules/
+webapp/.next/
+*.db
+.env

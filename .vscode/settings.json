@@ -22,5 +22,6 @@
     "এগুলো"
   ],
   "editor.fontFamily": "JetBrains",
-  "terminal.integrated.fontFamily": "monospace"
+  "terminal.integrated.fontFamily": "monospace",
+  "git.ignoreLimitWarning": true
 }
