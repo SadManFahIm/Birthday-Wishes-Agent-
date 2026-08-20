@@ -1,242 +1,181 @@
-# LinkedIn Birthday Wishes Agent 🎂🤖
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/version-10.0-f78166" />
+  <img src="https://img.shields.io/badge/license-MIT-green" />
+  <img src="https://img.shields.io/badge/LangGraph-workflow-blueviolet" />
+  <img src="https://img.shields.io/badge/Claude-Sonnet-orange" />
+  <img src="https://img.shields.io/badge/Gemini-2.5%20Flash-blue" />
+  <img src="https://img.shields.io/badge/Streamlit-dashboards-FF4B4B?logo=streamlit&logoColor=white" />
+  <img src="https://img.shields.io/badge/Firebase-FCM-FFCA28?logo=firebase&logoColor=black" />
+  <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/Kubernetes-ready-326CE5?logo=kubernetes&logoColor=white" />
+  <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white" />
+  <img src="https://img.shields.io/badge/platforms-10-blue" />
+  <img src="https://img.shields.io/badge/flake8-passing-brightgreen" />
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-9.0-brightgreen)
-![LangChain](https://img.shields.io/badge/LangChain-powered-blueviolet)
-![Gemini](https://img.shields.io/badge/Gemini-2.5%20Pro-orange)
-![Streamlit](https://img.shields.io/badge/Streamlit-Cloud-red)
-![Docker](https://img.shields.io/badge/Docker-Supported-blue)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326CE5)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green)
-![Platforms](https://img.shields.io/badge/platforms-9%2B-blue)
+<h1 align="center">🎂 Birthday Wishes Agent</h1>
 
-An intelligent, production-ready AI agent pipeline that manages birthday wishes and life event congratulations across LinkedIn, WhatsApp, Facebook, Instagram, Twitter/X, Slack, Telegram, Discord, and regional Asian platforms — with memory, sentiment awareness, tone matching, multi-language support, voice messages and voice cloning, personality profiling, emotional intelligence, predictive birthdays, multi-account support, Docker, Kubernetes, CI/CD, cloud deployment, proxy rotation, VPN auto-switch, 2FA support, a unified command center dashboard, real-time wish preview, full contact interaction timelines, VIP contact flagging, smart emoji calibration, conditional workflow builder, platform ROI comparison, AI-powered wish style memory, a self-improving agent loop, multi-model consensus, and a FastAPI + PostgreSQL + Redis backend built to scale.
+<p align="center">
+  <strong>An AI-powered relationship management agent that automates personalized birthday wishes across 10+ platforms — with memory, sentiment awareness, autonomous decision-making, GDPR compliance, and a full analytics suite.</strong>
+</p>
+
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-features">Features</a> •
+  <a href="#%EF%B8%8F-project-structure">Structure</a> •
+  <a href="#-branch-guide">Branches</a> •
+  <a href="#-configuration">Config</a> •
+  <a href="#-changelog">Changelog</a>
+</p>
 
 ---
 
 ## 📝 Introduction
 
-This project demonstrates how to build a sophisticated, multi-feature AI agent using Python, LangChain, and browser automation. What started as a simple LinkedIn reply bot has grown into a comprehensive relationship management system across nine-plus social platforms — now with enterprise-grade security, fully automatic timezone scheduling, AI-powered auto-learning, live personalization scoring, a single command center to control everything, and a v9.0 push into autonomy (a self-improving agent loop, multi-model consensus), richer media (voice cloning, AI video messages), and production infrastructure (FastAPI backend, PostgreSQL, Redis, Kubernetes).
+What started as a simple LinkedIn birthday reply bot has evolved into a **production-grade AI agent system** spanning 10+ social platforms. The agent detects birthdays, generates hyper-personalized wishes using multi-model AI (Claude Sonnet, Gemini 2.5 Flash, GPT-4o), tracks relationships over time, autonomously decides the best outreach strategy, and provides a comprehensive analytics dashboard — all while staying GDPR-compliant and tamper-evident.
+
+**v10.0** introduces a LangGraph-powered workflow engine, MCP server integration (14 tools for Claude Desktop), ML-based churn prediction, ROI forecasting, GDPR compliance, JWT authentication, Firebase push notifications, per-platform rate limiting, and a daily morning briefing system.
 
 ---
 
-## 📌 Table of Contents
+## 🚀 Quick Start
 
-- [Features](#-features)
-- [Project Structure](#️-project-structure)
-- [Branch Guide](#-branch-guide)
-- [Prerequisites](#-prerequisites)
-- [Installation](#-installation)
-- [Docker Setup](#-docker-setup)
-- [Cloud Deployment](#️-cloud-deployment)
-- [Configuration](#️-configuration)
-- [Usage](#-usage)
-- [Deploy to Streamlit Cloud](#-deploy-to-streamlit-cloud)
-- [Notification Setup](#-notification-setup)
-- [Multi-Account Support](#-multi-account-support)
-- [Supported Languages](#-supported-languages)
-- [Relationship Scoring](#-relationship-scoring)
-- [Wish Personalization Scoring](#-wish-personalization-scoring)
-- [Tone Matching](#-tone-matching)
-- [Changelog](#-changelog)
-- [Contributing](#-contributing)
+```bash
+# Clone
+git clone https://github.com/SadManFahIm/Birthday-Wishes-Agent-.git
+cd Birthday-Wishes-Agent-
+
+# Virtual environment
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # macOS/Linux
+
+# Install
+pip install -r requirements.txt
+
+# Configure
+cp .env.example .env            # Edit with your API keys
+
+# Run
+python agent.py                 # Main agent
+streamlit run churn_predictor.py  # Any dashboard module
+```
+
+**Docker:**
+```bash
+docker-compose up --build -d
+```
 
 ---
 
 ## ✨ Features
 
-### 🤖 Core Agent
+### 🧬 v10.0 — Intelligence, Privacy & Operations
+
+| Module | Description |
+|--------|-------------|
+| **LangGraph Workflow Engine** | State-machine orchestration with conditional routing, parallel execution, and checkpoint persistence |
+| **MCP Server** | 14-tool server for Claude Desktop — query contacts, trigger wishes, check stats, all from chat |
+| **Multi-Model Config** | Unified interface across Claude Sonnet 4.6, Gemini 2.5 Flash, GPT-4o with automatic fallback |
+| **Autonomous Agent** | Self-governing decision engine — scores contacts, picks actions (wish/follow-up/check-in/skip), daily cap enforcement |
+| **Churn Predictor** | ML-based churn scoring with decay curves, risk factors, and automated alerts |
+| **ROI Forecasting** | Revenue attribution and pipeline forecasting per contact and platform |
+| **Wish Performance Predictor** | Predicts reply probability, optimal send time, and best wish style per contact |
+| **Interest Graph** | Maps contact interests and relationship clusters as a weighted graph |
+| **Vector Memory** | Semantic search across all past interactions using embedded vectors |
+| **Conversation Summary** | Auto-summarizes conversation threads for quick context |
+| **GDPR Compliance** | Consent tracking, right-to-forget (22 tables), data retention policies, data export (Article 20) |
+| **Audit Trail** | Tamper-evident SHA-256 hash-chain logging of every data operation across all modules |
+| **JWT Auth** | Zero-dependency JWT authentication — PBKDF2 passwords, RBAC (admin/manager/viewer), token refresh, account lockout |
+| **Push Notifications** | Firebase FCM mobile push — 10 categories, topic subscriptions, quiet hours, delivery tracking |
+| **Rate Limit Dashboard** | Per-platform quota tracking (daily/hourly/per-minute) across 10 platforms with cooldown enforcement |
+| **Morning Briefing** | Daily digest — today's birthdays, pending tasks, agent status, rate limits, alerts — delivered via push |
+| **Engagement Calendar** | Visual calendar of all outreach activity and upcoming birthdays |
+| **Email Outreach** | Templated email campaigns with tracking |
+| **Google Calendar Sync** | Two-way sync of birthdays and reminders |
+| **Notion Sync** | Pushes contact data and wish history to Notion databases |
+| **CRM Sync** | Bidirectional sync with HubSpot and Salesforce |
+
+### 🤖 v9.0 — Autonomy, Rich Media & Scale
 
 | Feature | Description |
-| ------- | ----------- |
-| **GitHub Follower Check** | Visits a GitHub profile and reports the follower count |
-| **LinkedIn Birthday Detection** | Finds contacts with birthdays today and sends personalized wishes |
-| **LinkedIn Reply to Wishes** | Scans unread messages and replies to birthday wishes |
-| **Multi-Platform Support** | Extends all features to WhatsApp, Facebook Messenger, Instagram DM, Twitter/X, and Slack |
-
-### 🧬 v9.0 — Autonomy, Rich Media & Scale 🆕
-
-| Feature | Description |
-| ------- | ----------- |
-| **Self-Improving Agent** | Reviews reply outcomes and past wish performance, then automatically tunes its own prompts and style choices over time — no manual re-tuning needed |
-| **Multi-Model Consensus** | Runs a wish through multiple LLMs (Gemini, GPT-4o, and others) and reconciles their outputs into a single, higher-confidence result before sending |
-| **Agent Session Memory** | Persists the agent's own reasoning/session state across restarts, so multi-step tasks (e.g. a paused batch run) resume where they left off |
-| **Voice Cloning** | Clones the user's own voice (with consent) to generate birthday voice notes that sound like them, instead of a generic TTS voice |
-| **AI Video Message** | Generates a short, personalized video birthday message per contact |
-| **Gift Suggestion Engine** | Suggests a gift idea per contact based on their profile, interests, and relationship history |
-| **WhatsApp Business API** | Moves WhatsApp integration from browser automation to the official WhatsApp Business API for reliable, ToS-compliant sending |
-| **Telegram Birthday Bot** | Dedicated Telegram bot for birthday detection, wishing, and replies |
-| **Discord Birthday Bot** | Discord bot for birthday detection and server/DM birthday announcements |
-| **Asian Platforms Support** | Adds birthday detection and wishing for regional platforms popular in Asia (e.g. WeChat, LINE, KakaoTalk) |
-| **Relationship Graph Dashboard** | Interactive network graph visualizing how contacts connect to each other and to the user |
-| **Revenue Attribution Dashboard** | For business use cases — attributes downstream revenue/deals back to specific wishes and platforms |
-| **Network Health Score Dashboard** | Single aggregate score for the overall health of the user's network, trended over time |
-| **FastAPI Backend** | Dedicated FastAPI service exposing the agent's functionality as a REST API, decoupled from the Streamlit dashboards |
-| **Next.js Web App** | New `webapp/` frontend rebuilt in Next.js for a faster, more modern web UI |
-| **PostgreSQL Migration** | Migrates persistent storage from SQLite to PostgreSQL for multi-user, production-scale deployments |
-| **Redis Cache** | Adds a Redis caching layer for faster reads on contact data, scores, and session state |
-| **Kubernetes Support** | Adds a `k8s/` manifest set for deploying the full stack (agent, backend, web app, database, cache) on Kubernetes |
+|---------|-------------|
+| **Self-Improving Agent** | Reviews outcomes and auto-tunes prompts and style choices over time |
+| **Multi-Model Consensus** | Runs wishes through multiple LLMs, reconciles into a single high-confidence result |
+| **Voice Cloning** | Clones user's voice (with consent) for personalized voice notes |
+| **AI Video Message** | Generates personalized video birthday messages per contact |
+| **Gift Suggestion Engine** | AI-powered gift recommendations based on profile, interests, and history |
+| **WhatsApp Business API** | Official API integration — replaces browser automation |
+| **Telegram Bot** | Dedicated birthday bot with detection, wishing, and replies |
+| **Discord Bot** | Server and DM birthday announcements |
+| **Asian Platforms** | WeChat, LINE, KakaoTalk support |
+| **FastAPI Backend** | REST API decoupled from dashboards |
+| **PostgreSQL Migration** | Production-scale storage replacing SQLite |
+| **Redis Cache** | Caching layer for contacts, scores, and sessions |
+| **Kubernetes Support** | Full-stack K8s manifests |
 
 ### 🚀 v8.0 — Intelligence & Automation
 
 | Feature | Description |
-| ------- | ----------- |
-| **Wish Style Memory** | Tracks which style (funny/formal/poetic/warm/motivational/nostalgic) was used per contact each year and always picks a fresh angle — wishes never feel repetitive |
-| **Context-Aware Opening Line** | Scans contact's recent LinkedIn activity (new job, promotion, product launch) and generates a hyper-specific opening line referencing it naturally |
-| **Multi-Wish Variant Generator** | Generates 3 distinct variants (formal/casual/funny) side-by-side with live personalization scores — pick, edit, or regenerate individually |
-| **Smart Emoji Calibration** | Learns each contact's emoji density from reply history and calibrates the wish accordingly (none/minimal/moderate/heavy/very_heavy) |
-| **Conditional Workflow Builder** | Visual IF-THEN-ELSE rule editor — build custom automation rules (e.g. "no reply → followup → decay alert") from the dashboard without touching code |
-| **Batch Approve Queue** | All AI-generated wishes land in a morning review queue — bulk approve/reject/edit/send in one screen |
-| **Smart Send-Time Optimizer** | Learns per-platform peak activity hours from reply timestamps and schedules wishes at each contact's personal active window |
-| **Auto-Pause on Anomaly** | Monitors errors in real-time — auto-pauses all tasks on failure spikes or rate-limit storms; sends Telegram alert; requires manual resume |
-| **Weekly/Monthly Insight Report** | Auto-generated summary: best platform, best wish style, score trends, fastest repliers, relationship movement, key takeaways |
-| **Reply Sentiment Trend** | Tracks reply tone (excited→positive→neutral→cold→no_reply) per contact over time; surfaces declining relationships early |
-| **Platform ROI Comparison** | Measures effort vs engagement across all 6 platforms — scores each on ROI and recommends where to double down, maintain, or reduce |
-| **Personalization Score Trend** | Monthly/weekly chart of wish quality; per-contact drill-down with component breakdown; identifies weakest scoring areas |
-| **Relationship Tiering Auto-Adjust** | Automatically moves contacts between Close Friend/Colleague/Acquaintance based on reply speed, depth, frequency, and sentiment |
-| **Mutual Connection Insights** | Detects shared connections, interests, alumni ties, and past companies; generates a natural sentence to weave into the wish |
-| **Life Event Timeline Merge** | Unified "important dates" calendar per contact: birthday, promotion, job change, work anniversary, graduation, marriage, and more |
-| **VIP Contact Flagging** | Mark contacts as Platinum/Gold/Silver VIP — enforces minimum personalization score, mandatory manual review, optional voice note and multi-platform sending |
-
-### 🎛️ Command Center & Live Preview 🆕
-
-| Feature | Description |
-| ------- | ----------- |
-| **Unified Command Center** | Single dashboard to control every platform, trigger any task on demand, monitor live agent status, and review logs & alerts — all in one screen |
-| **Manual Task Triggers** | Run any of the 13 core tasks (birthday scan, AI wish, follow-up, decay alert, miss tracker, A/B optimizer, and more) instantly with one click |
-| **Live Status & Logs** | See which agents are running, which platforms are active, and a filterable live log terminal (INFO / WARN / ERROR), with log export |
-| **Dry Run Toggle** | Flip between Dry Run and Live mode directly from the dashboard, no `.env` editing required |
-| **Real-time Wish Preview** | Select a contact, generate an AI wish, edit it manually, and watch the personalization score update live — see exactly how the message will render on LinkedIn or WhatsApp before sending |
-| **Contact Timeline View** | Full chronological history per contact — every wish sent, reply received, follow-up, decay alert, and relationship-health change, in one scrollable timeline with health indicators and filters |
+|---------|-------------|
+| **Wish Style Memory** | Tracks past styles per contact, always picks a fresh angle |
+| **Context-Aware Opener** | Reads recent LinkedIn activity for hyper-specific opening lines |
+| **Multi-Wish Variants** | Formal/casual/funny side-by-side with live personalization scores |
+| **Smart Emoji Calibration** | Learns emoji density from reply history |
+| **Conditional Workflow Builder** | Visual IF-THEN-ELSE rule editor, no code needed |
+| **Batch Approve Queue** | Morning review — bulk approve/reject/edit/send |
+| **Send-Time Optimizer** | Per-platform activity learning, peak-hour scheduling |
+| **Auto-Pause on Anomaly** | Self-pausing on failure spikes with Telegram alert |
+| **Reply Sentiment Trend** | Tracks tone changes per contact over time |
+| **Platform ROI Comparison** | Effort vs. engagement matrix with focus recommendations |
+| **VIP Contact Flagging** | Platinum/Gold/Silver with mandatory review and multi-platform sending |
 
 ### 🔐 Security & Reliability
 
 | Feature | Description |
-| ------- | ----------- |
-| **Session Management** | Browser cookies saved to disk — no repeated logins. Auto-expires after 12 hours |
-| **Error Handling & Retry** | Every task retries up to 3 times with a 5-second delay between attempts |
-| **Dry Run Mode** | Simulate the agent without sending any real messages |
-| **Whitelist / Blacklist** | Control exactly which contacts to wish or always skip |
-| **Reply Cooldown** | Prevents replying to the same contact within 30 days |
-| **2FA Support** | Full LinkedIn 2FA support — TOTP (auto-generates code), SMS OTP, Email OTP |
-| **Proxy Rotation** | Rotates proxies to avoid LinkedIn rate limits and IP bans |
-| **VPN Auto-Switch** | Automatically switches VPN server when LinkedIn blocks current IP |
-
-### 🤖 AI Model Selector
-
-| Feature | Description |
-| ------- | ----------- |
-| **GPT-4o / Gemini 2.5 Pro Switch** | Switch between OpenAI GPT-4o and Google Gemini 2.5 Pro from `.env` — no code change needed |
-| **Fallback Logic** | Auto-falls back to Gemini if unknown model set. Clear error if API key missing |
-| **Startup Log** | Model name logged at startup for transparency |
-
-### 🧠 AI & Personalization
-
-| Feature | Description |
-| ------- | ----------- |
-| **AI-Generated Custom Wishes** | Visits the contact's profile, reads their job and interests, generates a completely unique wish |
-| **Wish Personalization Score** 🆕 | Scores every wish 1–10 on personalization — name, job/company reference, industry reference, shared memory, language uniqueness, length, and warmth. Auto-retries with a better prompt if the score is below 6 |
-| **Contact Relationship Score** | Classifies each contact as Close Friend, Colleague, or Acquaintance and adjusts wish style |
-| **Memory System** | Remembers key details from last year — references them in this year's wish |
-| **Sentiment Analysis** | Detects if someone is sad, stressed, or lonely and replies with extra care |
-| **Tone Matching** | Mirrors the contact's communication style — formal, casual, emoji-heavy, slang |
-| **Multi-language Reply** | Detects the language of the wish and replies in the same language (17 languages) |
-| **Wish Quality Scorer** | Scores every AI-generated wish 1–10 on overall quality (grammar, tone) and auto-retries if below threshold |
-| **Occasion Detection** | Detects promotions, new jobs, graduations, engagements, marriages and congratulates |
-| **Personality Profiling** | Analyzes LinkedIn posts to detect MBTI type, dominant traits, tone, interests, communication style |
-| **Emotional Intelligence** | Scores the emotional tone of every wish and reply — ensures empathy and warmth before sending |
-| **Predictive Birthday** | Predicts upcoming birthdays before they officially appear on LinkedIn |
-| **RAG-Based Memory** | ChromaDB vector store for long-term, semantic relationship memory |
-| **Conversation Memory** | Maintains full conversation history for context-aware replies |
-
-### 🎙️ Voice Messages
-
-| Feature | Description |
-| ------- | ----------- |
-| **Voice Message Reply** | Generates a voice message from the reply text and sends it on WhatsApp |
-| **AI-Generated Voice Wish** | Converts birthday wish text to a realistic voice note (gTTS or ElevenLabs) |
-| **gTTS Engine** | Free Google Text-to-Speech, no API key required |
-| **ElevenLabs Engine** | Premium realistic voice generation |
-| **Voice-to-Text Reply** | Transcribes incoming WhatsApp voice notes and auto-replies |
-| **Auto Language Detection** | Selects the correct TTS language automatically |
-
-### ⚙️ Smart Automation
-
-| Feature | Description |
-| ------- | ----------- |
-| **Daily Scheduler** | Runs all tasks automatically at a configurable time every day |
-| **Auto Timezone Scheduler** | Fully automatic — detects contact's timezone from LinkedIn location and sends at 9:00 AM their local time |
-| **Smart Follow-up Timing** | If no reply in 3 days, automatically sends a warm follow-up. Skips if they replied |
-| **Follow-up Messages** | Sends a warm follow-up message 2-3 days after each birthday wish |
-| **Auto Reply to Follow-up** | When someone replies to a wish or follow-up, responds automatically |
-| **Birthday Calendar Export** | Exports all contacts' birthdays to a `.ics` file for Google Calendar |
-| **Birthday Reminder Email** | Sends a reminder email the day before a contact's birthday |
-| **Birthday Miss Tracker** | Detects which contacts had birthdays but received no wish — sends late wishes automatically |
-| **LinkedIn Post Engagement** | Likes and comments on birthday contacts' latest LinkedIn posts |
-| **Group Birthday Detection** | Finds birthday posts in LinkedIn Groups and engages with them |
-| **Auto LinkedIn Connect** | Sends personalized connection requests to 2nd-degree wishers |
-| **Personalized Connect After Wishing** | After wishing a contact, sends a personalized connection request with a note referencing the wish |
-| **Wish A/B Testing (Auto-Learning)** | Tests 5 wish styles, tracks reply rates with decay weighting, auto-selects best style |
-| **Best Time to Connect** | Analyzes activity patterns to find the optimal send time per contact |
-| **Contact Categorizer** | Auto-categorizes contacts by industry, seniority, and location |
-| **LinkedIn DM Campaign** | Sends personalized icebreaker messages to new connections |
+|---------|-------------|
+| **JWT Authentication** | Role-based access control (admin/manager/viewer) with token refresh and blocklist |
+| **GDPR Compliance** | Full Article 17 (right to forget) and Article 20 (data portability) support |
+| **Tamper-Evident Audit** | SHA-256 hash-chain on every data operation |
+| **Session Management** | Browser cookies with 12-hour auto-expiry |
+| **Error Handling & Retry** | 3 retries with exponential backoff |
+| **2FA Support** | TOTP, SMS OTP, Email OTP for LinkedIn |
+| **Proxy Rotation** | Round-robin/random/fastest proxy selection |
+| **VPN Auto-Switch** | Automatic VPN server rotation on IP blocks |
 
 ### 🌐 Multi-Platform
 
-| Platform | Features |
-| -------- | -------- |
-| **LinkedIn** | Birthday detection, wishing, replying, post engagement, connection requests |
-| **WhatsApp** | Birthday replies, voice messages, voice-to-text |
-| **Facebook** | Birthday replies |
-| **Instagram** | Birthday replies, birthday post detection |
-| **Twitter/X** | Birthday mention detection, auto-reply to birthday tweets |
-| **Slack** | Birthday detection from workspace profiles, DM + channel announcements |
-| **WhatsApp Business API** 🆕 | Official API-based birthday replies and voice messages (replaces browser automation) |
-| **Telegram** 🆕 | Birthday detection, wishing, and replies via a dedicated Telegram bot |
-| **Discord** 🆕 | Birthday detection and DM/server birthday announcements via a Discord bot |
-| **Asian Platforms** 🆕 | Birthday detection and wishing on regional platforms (e.g. WeChat, LINE, KakaoTalk) |
+| Platform | Capabilities |
+|----------|-------------|
+| **LinkedIn** | Birthday detection, AI wishing, replying, post engagement, connection requests |
+| **WhatsApp** | Birthday replies, voice messages, voice-to-text, Business API |
+| **Facebook** | Birthday detection and replies |
+| **Instagram** | Birthday replies, post detection |
+| **Twitter/X** | Birthday mention detection, auto-reply |
+| **Slack** | Workspace birthday detection, DM + channel announcements |
+| **Telegram** | Dedicated birthday bot |
+| **Discord** | Server/DM birthday announcements |
+| **WeChat** | Birthday detection and wishing |
+| **LINE** | Birthday detection and wishing |
 
-### 📋 Contact Management
+### 📊 Dashboards
 
-| Feature | Description |
-| ------- | ----------- |
-| **Contact Notes** | Save personal notes per contact — injected into wish prompts automatically |
-| **Memory System** | Year-over-year memory of job, company, life events, and interests |
-| **Connection Strength Tracker** | Tracks interaction history and scores connection strength over time |
-| **Relationship Health Score** | Weekly relationship health report sent to your email |
-| **Relationship Decay Alert** | Alerts when a contact hasn't been interacted with in 30/60/90+ days. Auto sends check-in |
-| **Contact Timeline View** 🆕 | Full chronological history per contact — wishes, replies, follow-ups, decay alerts, and health changes on one scrollable timeline, with search, per-contact health indicator, and event-type filters |
+Every v10.0 module ships with a Streamlit dashboard using a consistent dark theme (`#0d1117` / `#161b22` / `#f78166`). Run any module with `streamlit run <module>.py`:
 
-### 👥 Multi-Account Support
-
-| Feature | Description |
-| ------- | ----------- |
-| **Multiple LinkedIn Accounts** | Manage and rotate across multiple LinkedIn accounts |
-| **Per-Account History** | Each account has independent wish history and contact memory |
-| **Centralized Dashboard** | Single dashboard showing activity across all accounts |
-| **Rate Limit Protection** | Automatically rotates accounts to avoid LinkedIn rate limits |
-
-### 📊 Monitoring & Notifications
-
-| Feature | Description |
-| ------- | ----------- |
-| **SQLite Logging** | Every action saved to `agent_history.db` |
-| **Telegram Notification** | Sends a run summary to Telegram after each task |
-| **Email Notification** | Sends a summary email via Gmail after each task |
-| **Weekly Email Digest** | Summarizes wishes sent, upcoming birthdays, and fading connections |
-| **Unified Command Center** 🆕 | Single dashboard for platform control, manual task triggers, live agent status, and logs & alerts — replaces juggling multiple separate dashboards for day-to-day operation |
-| **Streamlit Control Dashboard** | Start/stop tasks, toggle Dry Run, view live logs |
-| **Analytics Dashboard** | Charts for activity, platforms, languages, relationships, follow-ups |
-| **Real-time Dashboard** | Live updates via FastAPI + WebSocket |
-| **Contact Profile Cards** | Card view for every contact — notes, wish history, strength score |
-| **Wish Preview Dashboard** | Preview, edit, approve, or reject wishes before sending |
-| **Real-time Wish Preview** 🆕 | Live AI-generate + manual edit + personalization score + platform-accurate render, all updating as you type |
-| **Full Web App** | FastAPI + React + JWT auth + multi-user support |
-| **Browser Extension** | LinkedIn sidebar showing contact info, notes, and wish history |
-| **Mobile App** | Mobile-optimized Streamlit app deployable to Streamlit Cloud |
-| **Onboarding Wizard** | Step-by-step first-time setup guide |
-| **Dark / Light Mode** | Theme toggle available across all dashboards |
+| Dashboard | Tabs |
+|-----------|------|
+| Churn Predictor | Predictions, Risk Factors, Alerts |
+| ROI Forecasting | Forecasts, Pipeline, Contacts |
+| GDPR Compliance | Consent, Erasure, Export, Retention, Audit, Integrity |
+| Audit Trail | Browse, Analytics, Chain Verify, Export, Archive |
+| JWT Auth | Users, Create User, Login Log, Test Login |
+| Push Notifications | Send, Devices, Log, Analytics, Preferences |
+| Rate Limit Dashboard | Live Status, Quotas, Throttle Log, History, Maintenance |
+| Morning Briefing | Today's Brief, History, Settings |
+| Interest Graph | Graph View, Clusters, Signals |
+| Engagement Calendar | Calendar, Upcoming, History |
+| Wish Performance | Predictions, Accuracy, Factors |
 
 ---
 
@@ -245,135 +184,87 @@ This project demonstrates how to build a sophisticated, multi-feature AI agent u
 ```
 Birthday-Wishes-Agent/
 │
-├── agent.py                     # Main agent — all tasks, toggles, scheduler
+├── ── Core Agent ──────────────────────────────────────────────
+├── agent.py                          # Main agent — tasks, toggles, scheduler (2.4k lines)
+├── autonomous_agent.py               # Self-governing decision engine with safety rails
+├── langgraph_workflow.py             # LangGraph state-machine workflow orchestration
+├── mcp_server.py                     # MCP server — 14 tools for Claude Desktop
+├── model_config.py                   # Multi-model config (Claude / Gemini / GPT-4o)
 │
-├── ── AI & Personalization ──
-├── ai/
-│   ├── self_improving_agent.py       # Tunes prompts/style from past outcomes 🆕
-│   ├── multi_model_consensus.py      # Reconciles output across multiple LLMs 🆕
-│   ├── agent_session_memory.py       # Persists agent session/task state 🆕
-│   ├── voice_cloning.py              # Clones user's voice for voice notes 🆕
-│   ├── video_message.py              # Generates personalized AI video wishes 🆕
-│   └── gift_suggestion.py            # Suggests a gift idea per contact 🆕
-├── wish_scorer.py                    # Wish quality scorer (1-10) with auto-retry
-├── wish_personalization_score.py     # Wish personalization scorer (1-10) with auto-retry
-├── sentiment.py                      # Sentiment analysis (happy/sad/stressed/lonely)
-├── tone_matching.py                  # Communication tone detection and mirroring
-├── multilang_reply.py                # Multi-language reply (17 languages)
-├── occasion_detection.py             # Life event detection and congratulations
-├── memory.py                         # Year-over-year contact memory system
-├── personality_profiling.py          # MBTI personality detection from LinkedIn posts
-├── emotional_intelligence.py         # Emotional intelligence scoring
-├── predictive_birthday.py            # Predict upcoming birthdays early
-├── rag_memory.py                     # ChromaDB vector store for long-term memory
+├── ── ML & Intelligence ───────────────────────────────────────
+├── churn_predictor.py                # ML-based churn scoring with decay curves
+├── roi_forecasting.py                # Revenue attribution and pipeline forecasting
+├── wish_performance_predictor.py     # Reply probability and optimal send-time prediction
+├── interest_graph.py                 # Contact interest mapping as weighted graph
+├── vector_memory.py                  # Semantic vector search across interactions
+├── conversation_summary.py           # Auto-summarization of conversation threads
 │
-├── ── Contact Management ──
-├── contact_notes.py              # Personal notes per contact
-├── connection_tracker.py         # Connection strength tracker
-├── contact_categorizer.py        # Auto-categorize by industry, seniority
-├── ab_testing.py                 # Wish A/B testing with auto-learning (5 styles)
-├── decay_alert.py                # Relationship decay alert + auto check-in
+├── ── Privacy & Security ──────────────────────────────────────
+├── gdpr_compliance.py                # GDPR — consent, erasure (22 tables), retention, export
+├── audit_log.py                      # Tamper-evident SHA-256 hash-chain audit trail
+├── jwt_auth.py                       # JWT auth — PBKDF2, RBAC, token refresh, lockout
 │
-├── ── Automation ──
-├── auto_reply_followup.py       # Auto reply to follow-up responses
-├── auto_connect.py              # Auto LinkedIn connect for 2nd-degree wishers
-├── personalized_connect.py      # Connection request with note after wishing
-├── smart_followup.py            # Smart follow-up if no reply in 3 days
-├── auto_timezone_scheduler.py   # Fully automatic timezone-aware scheduling
-├── birthday_miss_tracker.py     # Detect and send missed birthday wishes
-├── post_engagement.py           # LinkedIn post like and comment
-├── group_birthday.py            # LinkedIn Group birthday detection
-├── birthday_reminder.py         # Birthday reminder email (day before)
-├── best_time_connect.py         # Activity pattern analyzer
-├── dm_campaign.py                # LinkedIn DM campaign for new connections
-├── voice.py                      # Voice message + AI-generated voice wish
-├── voice_to_text.py              # Transcribe WhatsApp voice notes
+├── ── Operations ──────────────────────────────────────────────
+├── push_notifications.py             # Firebase FCM push — 10 categories, topics, quiet hours
+├── rate_limit_dashboard.py           # Per-platform quotas (daily/hourly/min) for 10 platforms
+├── morning_briefing.py               # Daily digest — birthdays, tasks, alerts, agent status
+├── engagement_calendar.py            # Visual outreach calendar
+├── email_outreach.py                 # Templated email campaigns with tracking
 │
-├── ── Platforms ──
-├── platforms/
-│   ├── linkedin.py                    # LinkedIn with AI wishes + relationship scoring
-│   ├── whatsapp.py                    # WhatsApp Web with voice message support
-│   ├── whatsapp_business_api.py       # Official WhatsApp Business API integration 🆕
-│   ├── facebook.py                    # Facebook Messenger
-│   ├── instagram.py                   # Instagram DM
-│   ├── telegram_birthday.py           # Telegram birthday bot 🆕
-│   ├── discord_birthday_bot.py        # Discord birthday bot 🆕
-│   └── asian_platforms.py             # WeChat / LINE / KakaoTalk support 🆕
-├── twitter_birthday.py          # Twitter/X birthday mention detection
-├── slack_birthday_bot.py        # Slack workspace birthday bot
+├── ── Integrations ────────────────────────────────────────────
+├── crm_sync.py                       # HubSpot + Salesforce bidirectional sync
+├── google_calendar_sync.py           # Google Calendar two-way sync
+├── notion_sync.py                    # Notion database sync
 │
-├── ── Security ──
-├── two_factor_auth.py           # 2FA support — TOTP, SMS, Email
-├── proxy_rotation.py            # Proxy rotation to avoid rate limits
-├── vpn_switch.py                # VPN auto-switch when IP blocked
+├── ── Backend & Data ──────────────────────────────────────────
+├── fastapi_backend.py                # FastAPI REST API service
+├── postgres_migration.py             # SQLite → PostgreSQL migration
+├── redis_cache.py                    # Redis caching layer
 │
-├── ── Notifications ──
-├── notifications.py             # Telegram & Email notifications
-├── email_digest.py              # Weekly email digest
-├── relationship_health.py       # Relationship health score report
+├── ── Config & Data ───────────────────────────────────────────
+├── .env.example                      # Environment variable template
+├── requirements.txt                  # Python dependencies
+├── agent_history.db                  # SQLite database (auto-created)
 │
-├── ── Multi-Account ──
-├── multi_account.py             # Manage and rotate LinkedIn accounts
-│
-├── ── Dashboards ──
-├── dashboards/
-│   ├── relationship_graph.py         # Interactive contact relationship network graph 🆕
-│   ├── revenue_attribution.py        # Attributes revenue/deals back to wishes 🆕
-│   └── network_health_score.py       # Aggregate network health score, trended 🆕
-├── command_center.py            # Unified Command Center — control, triggers, live status, logs
-├── wish_preview.py               # Real-time Wish Preview — AI generate + edit + live score + platform render
-├── contact_timeline.py           # Contact Timeline View — full interaction history per contact
-├── dashboard.py                  # Streamlit control dashboard
-├── analytics.py                  # Analytics dashboard with charts
-├── profile_cards.py              # Contact profile cards
-├── mobile_app.py                 # Mobile app for Streamlit Cloud
-├── realtime_dashboard.py         # FastAPI + WebSocket live dashboard
-├── ab_dashboard.py               # A/B testing dashboard
-├── extension/                    # LinkedIn sidebar browser extension
-├── onboarding.py                 # First-time setup wizard
-├── theme_toggle.py               # Dark/Light mode helper
-│
-├── ── Backend & Data ──
-├── fastapi_backend.py           # FastAPI service exposing agent functionality as a REST API 🆕
-├── webapp/                       # Next.js web app (rebuilt from React) 🆕
-├── postgres_migration.py        # Migrates storage from SQLite to PostgreSQL 🆕
-├── redis_cache.py               # Redis caching layer for contacts, scores, session state 🆕
-│
-├── ── DevOps ──
+├── ── DevOps ──────────────────────────────────────────────────
 ├── Dockerfile
 ├── docker-compose.yml
-├── k8s/                          # Kubernetes manifests for the full stack 🆕
-├── .github/workflows/ci-cd.yml  # GitHub Actions pipeline
-├── deploy/aws/                  # AWS deployment configs
-├── deploy/gcp/                  # GCP deployment configs
-│
-├── .env                         # Your credentials (never commit!)
-├── .env.example                 # Credentials template
-├── requirements.txt
-│
-├── agent.log                    # Live log (auto-generated)
-├── agent_history.db              # SQLite database (legacy; see postgres_migration.py)
-├── birthdays.ics                # Exported calendar (auto-generated)
-├── audio_messages/              # Voice files (auto-generated)
-├── proxies.txt                  # Proxy list (optional)
-└── browser_profile/             # Browser cookies (auto-generated)
+├── k8s/                              # Kubernetes manifests
+├── .github/workflows/ci-cd.yml      # GitHub Actions (flake8 gate)
+├── deploy/aws/                       # AWS deployment configs
+└── deploy/gcp/                       # GCP deployment configs
 ```
+
+**Module pattern (v10.0):** Every module follows the same structure:
+- `init_*_tables()` — auto-bootstrap SQLite schema
+- Core business logic functions
+- `render_dashboard()` — Streamlit dashboard with dark theme
+- `_self_test()` — comprehensive self-test with temp DB
+- `if __name__ == "__main__": _self_test()` / `else: render_dashboard()`
+- flake8 clean (`--select=E9,F63,F7,F82`)
 
 ---
 
 ## 🌿 Branch Guide
 
 | Branch | Status | What was added |
-| ------ | ------ | -------------- |
-| `main` | 🟢 Active (v9.0) | All features merged |
-| `9.0` | ✅ Merged | Self-improving agent, multi-model consensus, agent session memory, voice cloning, AI video message, gift suggestion, WhatsApp Business API, Telegram, Discord, Asian platforms, relationship graph, revenue attribution, network health score, FastAPI backend, Next.js web app, Postgres migration, Redis cache, Kubernetes support |
-| `8.0` | ✅ Merged | Wish style memory, context opener, variant generator, emoji calibration, workflow builder, batch queue, send-time optimizer, auto-pause, insight report, sentiment trend, platform ROI, score trend, tier auto-adjust, mutual insights, life event timeline, VIP flagging |
-| `7.0` | ✅ Merged | Wish personalization scorer (auto-retry), Unified Command Center, Real-time Wish Preview, Contact Timeline View |
-| `6.0` | ✅ Merged | AI model selector, A/B auto-learning, voice wish, decay alert, miss tracker, Twitter/X, Slack, auto timezone, smart follow-up, personalized connect, 2FA, proxy rotation, VPN auto-switch |
-| `5.0` | ✅ Stable tag | Relationship health score, RAG memory, A/B testing, web app, browser extension |
-| `4.0` | ✅ Stable tag | Reminder emails, tone matching, wish quality scorer, dark mode |
+|--------|--------|----------------|
+| `main` | 🟢 Active (v9.0) | All merged features through v9.0 |
+| `10.0` | 🔵 Development | LangGraph workflow, MCP server (14 tools), multi-model config, autonomous agent, churn predictor, ROI forecasting, wish performance predictor, interest graph, vector memory, conversation summary, engagement calendar, email outreach, Google Calendar sync, Notion sync, CRM sync |
+| `feature/gdpr-compliance` | 🟡 PR → main | GDPR — consent tracking, right-to-forget (22 tables), data retention, data export, audit log |
+| `feature/audit-log` | 🟡 PR → main | Tamper-evident SHA-256 hash-chain audit trail with search, export, analytics dashboard |
+| `feature/jwt-auth` | 🟡 PR → main | JWT auth — PBKDF2 passwords, RBAC (admin/manager/viewer), token refresh, lockout, FastAPI routes |
+| `feature/push-notifications` | 🟡 PR → main | Firebase FCM push — 10 categories, topic subscriptions, quiet hours, delivery tracking |
+| `feature/rate-limit-dashboard` | 🟡 PR → main | Per-platform quota tracking (daily/hourly/min) across 10 platforms with cooldown enforcement |
+| `feature/morning-briefing` | 🟡 PR → main | Daily morning digest — birthdays, tasks, agent status, rate limits, alerts via push |
+| `9.0` | ✅ Merged | Self-improving agent, multi-model consensus, voice cloning, AI video, gift suggestions, WhatsApp Business API, Telegram, Discord, Asian platforms, FastAPI, PostgreSQL, Redis, Kubernetes |
+| `8.0` | ✅ Merged | Wish style memory, context opener, variant generator, emoji calibration, workflow builder, batch queue, send-time optimizer, auto-pause, sentiment trend, platform ROI, VIP flagging |
+| `7.0` | ✅ Merged | Wish personalization scorer, Command Center, Real-time Wish Preview, Contact Timeline View |
+| `6.0` | ✅ Merged | AI model selector, A/B auto-learning, voice wish, decay alert, Twitter/X, Slack, 2FA, proxy rotation, VPN |
+| `5.0` | ✅ Stable | Relationship health, RAG memory, A/B testing, web app, browser extension |
+| `4.0` | ✅ Stable | Reminder emails, tone matching, wish quality scorer, dark mode |
 | `feature/cloud-deployment` | ✅ Merged | AWS + GCP cloud deployment |
-| `feature/docker-support` | ✅ Merged | Docker + docker-compose one-command setup |
+| `feature/docker-support` | ✅ Merged | Docker + docker-compose |
 | `feature/emotional-intelligence` | ✅ Merged | Emotional intelligence scoring |
 | `feature/github-actions-cicd` | ✅ Merged | GitHub Actions CI/CD pipeline |
 | `feature/multi-account-support` | ✅ Merged | Multiple LinkedIn account management |
@@ -382,544 +273,209 @@ Birthday-Wishes-Agent/
 
 ---
 
-## 🔧 Prerequisites
-
-- Python 3.10 or higher
-- Google Chrome browser
-- LinkedIn account
-- API key for OpenAI or Google Gemini
-- _(Optional)_ Facebook, Instagram, Twitter/X, Slack accounts
-- _(Optional)_ Telegram bot token
-- _(Optional)_ Gmail App Password
-- _(Optional)_ ElevenLabs API key for premium voice
-- _(Optional)_ Docker (for containerized setup)
-- _(Optional)_ AWS or GCP account (for cloud deployment)
-- _(Optional)_ NordVPN / ExpressVPN / OpenVPN (for VPN auto-switch)
-
----
-
-## 🚀 Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/SadManFahIm/Birthday-Wishes-Agent-.git
-cd Birthday-Wishes-Agent-
-```
-
-### 2. Create a virtual environment
-
-**Windows:**
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-```
-
-**macOS/Linux:**
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 🐳 Docker Setup
-
-```bash
-docker-compose up --build   # Build and run
-docker-compose up -d        # Run in background
-docker-compose logs -f      # View live logs
-docker-compose down         # Stop
-```
-
----
-
-## ☁️ Cloud Deployment
-
-### AWS
-```bash
-# See deploy/aws/ for full configuration
-```
-
-### GCP
-```bash
-# See deploy/gcp/ for full configuration
-```
-
----
-
 ## ⚙️ Configuration
 
-### 1. Set up your `.env` file
+### Environment Variables
 
 ```bash
 cp .env.example .env
 ```
 
 ```env
-# ── AI Model Selector ─────────────────────────
-AI_MODEL=gemini            # gemini / gpt-4o
-GOOGLE_API_KEY=
-OPENAI_API_KEY=
+# ── AI Models ─────────────────────────────────
+AI_MODEL=gemini                    # gemini / claude / gpt-4o
+GOOGLE_API_KEY=                    # Gemini 2.5 Flash
+ANTHROPIC_API_KEY=                 # Claude Sonnet
+OPENAI_API_KEY=                    # GPT-4o
 
 # ── LinkedIn ──────────────────────────────────
 USERNAME=your_linkedin_email
 PASSWORD=your_linkedin_password
-GITHUB_URL=https://github.com/yourusername
 
-# ── LinkedIn 2FA ──────────────────────────────
-LINKEDIN_2FA_ENABLED=false
-LINKEDIN_2FA_METHOD=totp   # totp / sms / email
-LINKEDIN_TOTP_SECRET=      # Base32 secret from authenticator app
-LINKEDIN_OTP_WAIT=30
+# ── Auth (v10.0) ──────────────────────────────
+BWA_JWT_SECRET=your-secret-key     # Required in production
+BWA_ACCESS_TOKEN_MINUTES=30
+BWA_REFRESH_TOKEN_DAYS=7
 
-# ── Multi-Account ─────────────────────────────
-LINKEDIN_ACCOUNTS=account1@email.com,account2@email.com
-LINKEDIN_PASSWORDS=password1,password2
+# ── Push Notifications (v10.0) ────────────────
+BWA_FCM_SERVER_KEY=                # Firebase Cloud Messaging
 
-# ── Proxy Rotation ────────────────────────────
-PROXY_ENABLED=false
-PROXY_LIST=http://user:pass@ip1:port,http://user:pass@ip2:port
-PROXY_ROTATION=round_robin  # round_robin / random / fastest
+# ── Morning Briefing (v10.0) ──────────────────
+BWA_BRIEFING_HOUR=7                # UTC hour for daily digest
 
-# ── VPN Auto-Switch ───────────────────────────
-VPN_ENABLED=false
-VPN_CLIENT=nordvpn          # nordvpn / expressvpn / openvpn / custom
-VPN_SERVERS=us1,uk1,de1
-VPN_ROTATION=round_robin
+# ── Database ──────────────────────────────────
+BWA_DB_PATH=agent_history.db       # Override SQLite path
 
-# ── Twitter/X ─────────────────────────────────
+# ── Platforms (optional) ──────────────────────
 TWITTER_BEARER_TOKEN=
-TWITTER_API_KEY=
-TWITTER_API_SECRET=
-TWITTER_ACCESS_TOKEN=
-TWITTER_ACCESS_SECRET=
-
-# ── Slack ─────────────────────────────────────
-SLACK_BOT_TOKEN=xoxb-...
-SLACK_BIRTHDAY_CHANNEL=#birthdays
-
-# ── Facebook (optional) ───────────────────────
-FB_USERNAME=
-FB_PASSWORD=
-
-# ── Instagram (optional) ──────────────────────
-IG_USERNAME=
-IG_PASSWORD=
-
-# ── Telegram (optional) ───────────────────────
+SLACK_BOT_TOKEN=
 TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHAT_ID=
+DISCORD_BOT_TOKEN=
+WHATSAPP_BUSINESS_API_TOKEN=
 
-# ── Email / Gmail ─────────────────────────────
-EMAIL_SENDER=your_gmail@gmail.com
-EMAIL_PASSWORD=your_app_password
-EMAIL_RECEIVER=receiver@example.com
-REMINDER_RECIPIENTS=you@gmail.com
+# ── Integrations (optional) ───────────────────
+HUBSPOT_API_KEY=
+SALESFORCE_CLIENT_ID=
+NOTION_API_KEY=
+GOOGLE_CALENDAR_CREDENTIALS=
 
-# ── Voice ─────────────────────────────────────
-ELEVENLABS_API_KEY=
-ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
-TRANSCRIPTION_ENGINE=whisper
-
-# ── Wish Personalization Scorer 🆕 ────────────
-PERSONALIZATION_SCORE_ENABLED=true
-PERSONALIZATION_RETRY_THRESHOLD=6   # auto-retry if score below this
-
-# ── Feature Flags ─────────────────────────────
-CONNECTION_TRACKER_ENABLED=true
-```
-
-### 2. Key `agent.py` settings
-
-```python
-DRY_RUN = True
-
-# Platform toggles
-ENABLE_LINKEDIN  = True
-ENABLE_WHATSAPP  = True
-ENABLE_FACEBOOK  = True
-ENABLE_INSTAGRAM = True
-
-# AI features
-PERSONALITY_PROFILING_ENABLED  = True
-EMOTIONAL_INTELLIGENCE_ENABLED = True
-PREDICTIVE_BIRTHDAY_ENABLED    = True
-RAG_MEMORY_ENABLED             = True
-AB_TESTING_ENABLED             = True
-PERSONALIZATION_SCORE_ENABLED  = True   # 🆕
-
-# Automation
-AUTO_CONNECT_ENABLED           = True
-POST_ENGAGEMENT_ENABLED        = True
-GROUP_BIRTHDAY_ENABLED         = True
-BIRTHDAY_REMINDER_ENABLED      = True
-AUTO_REPLY_FOLLOWUP_ENABLED    = True
-CONNECTION_TRACKER_ENABLED     = True
-DM_CAMPAIGN_ENABLED            = True
-MULTI_ACCOUNT_ENABLED          = True
-
-# Scheduling
-SCHEDULE_HOUR   = 9
-SCHEDULE_MINUTE = 0
-COOLDOWN_DAYS   = 30
-FOLLOWUP_DAYS   = 3
-```
-
----
-
-## 📋 Usage
-
-### Option 1 — Run a task immediately
-
-```bash
-python agent.py
-```
-
-Uncomment desired task in `agent.py`:
-
-```python
-await run_birthday_detection_task()
-# await run_ai_custom_wish_task()
-# await run_linkedin_reply_task()
-# await run_whatsapp_reply_task()
-# await run_twitter_birthday_task()
-# await run_slack_birthday_task()
-# await run_smart_followup_task()
-# await run_decay_alert_task()
-# await run_miss_tracker_task()
-# await run_auto_timezone_task()
-# await run_personalized_connect_task()
-```
-
-### Option 2 — Daily Scheduler
-
-```python
-await run_scheduler()
-```
-
-### Option 3 — Streamlit Dashboards
-
-```bash
-streamlit run command_center.py                # Unified Command Center — start here
-streamlit run wish_preview.py                   # Real-time Wish Preview
-streamlit run contact_timeline.py               # Contact Timeline View
-streamlit run dashboards/relationship_graph.py      # 🆕 Relationship Graph
-streamlit run dashboards/revenue_attribution.py     # 🆕 Revenue Attribution
-streamlit run dashboards/network_health_score.py    # 🆕 Network Health Score
-streamlit run dashboard.py
-streamlit run analytics.py
-streamlit run ab_dashboard.py
-streamlit run mobile_app.py
-```
-
-### Option 4 — Docker
-
-```bash
-docker-compose up --build
-```
-
-### Option 5 — FastAPI Backend + Next.js Web App 🆕
-
-```bash
-uvicorn fastapi_backend:app --reload   # REST API on http://localhost:8000
-cd webapp && npm install && npm run dev  # Next.js app on http://localhost:3000
-```
-
-### Option 6 — Kubernetes 🆕
-
-```bash
-kubectl apply -f k8s/
-```
-
----
-
-## 📱 Deploy to Streamlit Cloud
-
-1. Push the repo to GitHub
-2. Go to [share.streamlit.io](https://share.streamlit.io)
-3. Connect your GitHub repo
-4. Set **Main file**: `command_center.py` (or `mobile_app.py` for the mobile-optimized view)
-5. Go to **App Settings → Secrets** and paste your `.env` values
-6. Click **Deploy**
-
----
-
-## 🔔 Notification Setup
-
-### Telegram
-1. Search **@BotFather** on Telegram → `/newbot`
-2. Copy the token → add as `TELEGRAM_BOT_TOKEN`
-3. Visit `https://api.telegram.org/bot<TOKEN>/getUpdates` to get your `chat_id`
-
-### Email (Gmail)
-1. Enable 2FA on Gmail
-2. **Settings → Security → App Passwords → Generate**
-3. Add the password as `EMAIL_PASSWORD`
-
----
-
-## 🔐 2FA Setup (LinkedIn)
-
-### TOTP (Recommended — fully automatic)
-
-1. Go to LinkedIn **Settings → Sign in & Security → Two-step verification**
-2. Choose **Authenticator App**
-3. Add to `.env`:
-```env
-LINKEDIN_2FA_ENABLED=true
+# ── Security (optional) ──────────────────────
+LINKEDIN_2FA_ENABLED=false
 LINKEDIN_2FA_METHOD=totp
-LINKEDIN_TOTP_SECRET=YOUR_BASE32_SECRET
-```
-
-The agent will auto-generate the 6-digit code every 30 seconds.
-
-### SMS / Email OTP
-```env
-LINKEDIN_2FA_ENABLED=true
-LINKEDIN_2FA_METHOD=sms   # or email
-LINKEDIN_OTP_WAIT=30
+PROXY_ENABLED=false
+VPN_ENABLED=false
 ```
 
 ---
 
-## 🛡️ Proxy & VPN Setup
+## 📖 Usage
 
-### Proxy Rotation
-```env
-PROXY_ENABLED=true
-PROXY_LIST=http://user:pass@ip1:port,http://user:pass@ip2:port
-PROXY_ROTATION=round_robin
+### Running Modules
+
+```bash
+# Main agent
+python agent.py
+
+# Autonomous agent
+python autonomous_agent.py run             # dry run
+python autonomous_agent.py run --live      # live sends
+python autonomous_agent.py status          # show status
+
+# Morning briefing
+python morning_briefing.py run             # print today's briefing
+python morning_briefing.py run --push default  # + push notification
+
+# Any self-test
+python churn_predictor.py
+python gdpr_compliance.py
+python audit_log.py
+python jwt_auth.py
+python push_notifications.py
+python rate_limit_dashboard.py
 ```
 
-### VPN Auto-Switch (NordVPN example)
-```env
-VPN_ENABLED=true
-VPN_CLIENT=nordvpn
-VPN_SERVERS=us1,uk2,de3
-VPN_ROTATION=round_robin
+### Running Dashboards
+
+```bash
+streamlit run churn_predictor.py
+streamlit run roi_forecasting.py
+streamlit run gdpr_compliance.py
+streamlit run audit_log.py
+streamlit run jwt_auth.py
+streamlit run push_notifications.py
+streamlit run rate_limit_dashboard.py
+streamlit run morning_briefing.py
+streamlit run interest_graph.py
+streamlit run engagement_calendar.py
+```
+
+### Docker
+
+```bash
+docker-compose up --build -d    # Build and run in background
+docker-compose logs -f          # View live logs
+docker-compose down             # Stop
 ```
 
 ---
 
-## 👥 Multi-Account Support
+## 🧪 Testing
 
-- Configure multiple LinkedIn accounts in `.env` via `LINKEDIN_ACCOUNTS`
-- Agent automatically rotates across accounts to avoid rate limiting
-- Each account maintains independent wish history and contact memory
+Every v10.0 module includes a comprehensive self-test suite that runs against a temporary database:
 
----
+```bash
+# Run all module self-tests
+python churn_predictor.py       # ML scoring tests
+python gdpr_compliance.py       # Consent, erasure, retention, export
+python audit_log.py             # Hash-chain integrity
+python jwt_auth.py              # Auth flow, lockout, password reset
+python push_notifications.py    # Device management, delivery tracking
+python rate_limit_dashboard.py  # Quota enforcement, cooldowns
+python morning_briefing.py      # Briefing generation, formatting
 
-## ⚙️ CI/CD Pipeline
-
-- Triggers on every push to `main` and all PRs
-- Linting + unit tests
-- Docker build verification
-- Deploy step disabled until Docker Hub secrets configured
-
----
-
-## 🌍 Supported Languages
-
-| Language | Detection | Reply |
-| -------- | --------- | ----- |
-| 🇬🇧 English | ✅ | ✅ |
-| 🇧🇩 Bengali | ✅ | ✅ |
-| 🇸🇦 Arabic | ✅ | ✅ |
-| 🇮🇳 Hindi | ✅ | ✅ |
-| 🇵🇰 Urdu | ✅ | ✅ |
-| 🇪🇸 Spanish | ✅ | ✅ |
-| 🇫🇷 French | ✅ | ✅ |
-| 🇩🇪 German | ✅ | ✅ |
-| 🇹🇷 Turkish | ✅ | ✅ |
-| 🇮🇩 Indonesian | ✅ | ✅ |
-| 🇲🇾 Malay | ✅ | ✅ |
-| 🇨🇳 Chinese | ✅ | ✅ |
-| 🇯🇵 Japanese | ✅ | ✅ |
-| 🇰🇷 Korean | ✅ | ✅ |
-| 🇧🇷 Portuguese | ✅ | ✅ |
-| 🇮🇹 Italian | ✅ | ✅ |
-| 🇷🇺 Russian | ✅ | ✅ |
+# CI gate (runs on every PR)
+flake8 --select=E9,F63,F7,F82 *.py
+```
 
 ---
 
-## 💝 Relationship Scoring
+## 📋 Changelog
 
-| Score | Type | Wish Style |
-| ----- | ---- | ---------- |
-| 60-100 | 🟢 Close Friend | Casual, warm, funny |
-| 30-59 | 🔵 Colleague | Professional but friendly |
-| 0-29 | ⚪ Acquaintance | Polite and brief |
+### v10.0 🆕
 
----
+**🧠 AI & Workflow**
+- ✅ **LangGraph Workflow Engine** — state-machine orchestration with conditional routing
+- ✅ **MCP Server** — 14 tools for Claude Desktop integration
+- ✅ **Multi-Model Config** — Claude Sonnet, Gemini 2.5 Flash, GPT-4o with fallback
+- ✅ **Autonomous Agent** — self-governing decisions with safety rails (error rate pause, daily cap)
+- ✅ **Churn Predictor** — ML-based scoring with decay curves and automated alerts
+- ✅ **ROI Forecasting** — revenue attribution and pipeline forecasting
+- ✅ **Wish Performance Predictor** — reply probability and optimal timing
+- ✅ **Interest Graph** — weighted relationship and interest mapping
+- ✅ **Vector Memory** — semantic search across all past interactions
+- ✅ **Conversation Summary** — auto-summarization of threads
 
-## 🎯 Wish Personalization Scoring 🆕
+**🔒 Privacy & Security**
+- ✅ **GDPR Compliance** — consent, right-to-forget (22 tables), retention, data export
+- ✅ **Audit Trail** — tamper-evident SHA-256 hash-chain across all modules
+- ✅ **JWT Auth** — PBKDF2 passwords, RBAC, token refresh/revocation, account lockout
 
-Every AI-generated wish is scored out of 10 on how personalized it actually is — separate from the general quality score in `wish_scorer.py`, which focuses on grammar and tone. If the score comes in below the configured retry threshold (default: 6), the agent automatically regenerates the wish with a stronger prompt before sending.
+**📱 Operations**
+- ✅ **Push Notifications** — Firebase FCM, 10 categories, topic subscriptions, quiet hours
+- ✅ **Rate Limit Dashboard** — per-platform quotas for 10 platforms, throttle logging
+- ✅ **Morning Briefing** — daily digest with push delivery
 
-| Criteria | Points |
-| -------- | ------ |
-| Name mentioned | +2 |
-| Job/company reference | +2 |
-| Industry reference | +1 |
-| Memory/past context | +2 |
-| Unique language (no generic filler) | +1 |
-| Right length | +1 |
-| Warm tone | +1 |
+**🔗 Integrations**
+- ✅ **CRM Sync** — HubSpot + Salesforce bidirectional
+- ✅ **Google Calendar Sync** — two-way birthday sync
+- ✅ **Notion Sync** — database sync for contacts and wishes
+- ✅ **Email Outreach** — templated campaigns
+- ✅ **Engagement Calendar** — visual outreach calendar
 
-| `wish_scorer.py` | `wish_personalization_score.py` |
-| ----------------- | -------------------------------- |
-| Quality score | Personalization score |
-| Grammar, tone | Name, job, memory, uniqueness |
+### v9.0
 
-The **Real-time Wish Preview** dashboard (`wish_preview.py`) shows this score live as you edit a wish, with a full breakdown of which criteria were met.
+**🤖 Autonomy & Media**
+- ✅ Self-improving agent, multi-model consensus, agent session memory
+- ✅ Voice cloning, AI video message, gift suggestion engine
+- ✅ WhatsApp Business API, Telegram bot, Discord bot, Asian platforms
 
----
-
-## 🎭 Tone Matching
-
-| Their Tone | Reply Style |
-| ---------- | ----------- |
-| Formal | Full sentences, no emoji, professional |
-| Semi-formal | Friendly, 1 emoji max |
-| Casual | Relaxed, contractions, 2 emoji |
-| Very Casual | Slang ok, short, fun |
-| Emoji-heavy | Match their emoji count |
-
----
-
-## 🔄 Changelog
-
-### v9.0 (current)
-
-**🧬 Autonomy & AI**
-- ✅ **Self-Improving Agent** — tunes its own prompts/style from past wish and reply outcomes
-- ✅ **Multi-Model Consensus** — reconciles output across Gemini, GPT-4o, and other models
-- ✅ **Agent Session Memory** — persists agent task/session state across restarts
-
-**🎬 Rich Media**
-- ✅ **Voice Cloning** — generates voice notes in the user's own cloned voice
-- ✅ **AI Video Message** — short personalized video birthday message per contact
-- ✅ **Gift Suggestion Engine** — suggests a gift idea per contact from profile/history
-
-**🌐 New Platforms**
-- ✅ **WhatsApp Business API** — official API integration, replacing browser automation
-- ✅ **Telegram Birthday Bot** — dedicated bot for detection, wishing, replies
-- ✅ **Discord Birthday Bot** — server/DM birthday detection and announcements
-- ✅ **Asian Platforms Support** — WeChat, LINE, KakaoTalk birthday detection and wishing
-
-**📊 Dashboards**
-- ✅ **Relationship Graph** — interactive network graph of contact connections
-- ✅ **Revenue Attribution** — attributes downstream revenue/deals to wishes and platforms
-- ✅ **Network Health Score** — aggregate, trended network health score
-
-**🏗️ Infrastructure & Scale**
-- ✅ **FastAPI Backend** — REST API for the agent, decoupled from the dashboards
-- ✅ **Next.js Web App** — `webapp/` rebuilt in Next.js
-- ✅ **PostgreSQL Migration** — production-scale storage, replacing SQLite
-- ✅ **Redis Cache** — caching layer for contacts, scores, and session state
-- ✅ **Kubernetes Support** — `k8s/` manifests for deploying the full stack
+**🏗️ Infrastructure**
+- ✅ FastAPI backend, Next.js web app, PostgreSQL migration, Redis cache, Kubernetes
 
 ### v8.0
 
-**🚀 AI & Intelligence**
-- ✅ **Wish Style Memory** — tracks past styles per contact, always picks a fresh angle
-- ✅ **Context-Aware Opening Line** — LinkedIn activity → hyper-specific wish opener
-- ✅ **Multi-Wish Variant Generator** — formal/casual/funny side-by-side with live scores
-- ✅ **Smart Emoji Calibration** — learns emoji density from reply history
+**🚀 Intelligence**
+- ✅ Wish style memory, context-aware opener, variant generator, emoji calibration
 
 **⚙️ Automation**
-- ✅ **Conditional Workflow Builder** — visual IF-THEN-ELSE rule editor, no code needed
-- ✅ **Batch Approve Queue** — morning wish review, bulk approve/reject/edit/send
-- ✅ **Smart Send-Time Optimizer** — per-platform activity learning, peak-hour scheduling
-- ✅ **Auto-Pause on Anomaly** — self-pausing agent on failure spikes, Telegram alert
+- ✅ Workflow builder, batch queue, send-time optimizer, auto-pause on anomaly
 
-**📊 Analytics & Insights**
-- ✅ **Weekly/Monthly Insight Report** — auto-generated performance summary
-- ✅ **Reply Sentiment Trend** — excited→cold tone tracking, decline alerts
-- ✅ **Platform ROI Comparison** — effort vs engagement matrix, focus recommendations
-- ✅ **Personalization Score Trend** — monthly wish quality chart, component breakdown
+**📊 Analytics**
+- ✅ Insight reports, sentiment trend, platform ROI, personalization score trend
 
-**📋 Contact & Relationship**
-- ✅ **Relationship Tiering Auto-Adjust** — dynamic Close Friend/Colleague/Acquaintance
-- ✅ **Mutual Connection Insights** — shared context → natural wish mention
-- ✅ **Life Event Timeline Merge** — unified important dates calendar per contact
-- ✅ **VIP Contact Flagging** — Platinum/Gold/Silver, mandatory review, voice note
+**📋 Contacts**
+- ✅ Tier auto-adjust, mutual connection insights, life event timeline, VIP flagging
 
-**🏗️ Project Structure**
-- ✅ **Full folder restructure** — 85+ files into `ai/`, `automation/`, `contacts/`, `security/`, `dashboards/`, `detection/`, `notifications/`, `multi_account/`, `config/`
-
-### v7.0 ✅
-
-**🎯 AI & Intelligence**
-- ✅ **Wish Personalization Scorer** — scores every wish 1–10 on name, job/company, industry, memory, uniqueness, length, and warmth; auto-retries with a stronger prompt if below 6
-
-**🎛️ Command Center & Dashboards**
-- ✅ **Unified Command Center** — single dashboard for platform control, manual task triggers, live agent status, and logs & alerts
-- ✅ **Real-time Wish Preview** — AI-generate or manually edit a wish and see the personalization score and platform-accurate render update live, before sending
-- ✅ **Contact Timeline View** — full chronological interaction history per contact (wishes, replies, follow-ups, decay alerts, health changes) with search and event filters
+### v7.0
+- ✅ Wish personalization scorer, Command Center, Real-time Wish Preview, Contact Timeline
 
 ### v6.0
-
-**🤖 AI & Intelligence**
-- ✅ **AI Model Selector** — switch between GPT-4o and Gemini 2.5 Pro from `.env`
-- ✅ **A/B Testing Auto-Learning** — 5 wish styles, decay weighting, auto-selects best
-
-**🎙️ Voice**
-- ✅ **AI-Generated Voice Wish** — text to realistic voice note (gTTS + ElevenLabs)
-
-**🌐 New Platforms**
-- ✅ **Twitter/X Birthday Detection** — detects birthday mentions, auto-replies
-- ✅ **Slack Birthday Bot** — DM + channel birthday announcements
-
-**⚙️ Automation**
-- ✅ **Auto Timezone Scheduler** — fully automatic, detects timezone from LinkedIn location
-- ✅ **Smart Follow-up** — auto follow-up if no reply in 3 days
-- ✅ **Birthday Miss Tracker** — detects missed birthdays, sends late wishes
-- ✅ **Personalized Connect After Wishing** — connection request with note after wishing
-- ✅ **Relationship Decay Alert** — alerts when contacts are fading (30/60/90+ days)
-
-**🔐 Security**
-- ✅ **2FA Support** — TOTP (auto-generates), SMS OTP, Email OTP
-- ✅ **Proxy Rotation** — rotates proxies to avoid rate limits
-- ✅ **VPN Auto-Switch** — switches VPN when IP is blocked
+- ✅ AI model selector, A/B auto-learning, voice wish, Twitter/X, Slack, 2FA, proxy, VPN
 
 ### v5.0
-
-- ✅ Relationship Health Score, RAG Memory (ChromaDB), Wish A/B Testing
-- ✅ Voice-to-Text Reply, Real-time Dashboard, Full Web App
-- ✅ Browser Extension, Weekly Email Digest, Onboarding Wizard
-- ✅ Conversation Memory, Contact Categorizer, LinkedIn DM Campaign
+- ✅ Relationship health, RAG memory, A/B testing, web app, browser extension
 
 ### v4.0
-
-- ✅ Personality Profiling (MBTI), Sentiment Analysis, Memory System
-- ✅ LinkedIn Post Engagement, Birthday Reminder Email, Contact Notes
-- ✅ Wish Quality Scorer, Group Birthday Detection, Connection Strength Tracker
-- ✅ Tone Matching, Occasion Detection, Multi-language Reply (17 languages)
-- ✅ Dark/Light Mode, Wish Preview Dashboard, Contact Profile Cards
+- ✅ Personality profiling, sentiment analysis, tone matching, multi-language (17 langs)
 
 ### v3.0
-
-- ✅ Multi-platform (WhatsApp, Facebook, Instagram)
-- ✅ AI-generated custom wishes, Voice messages, Follow-up messages
-- ✅ Birthday calendar export, Smart timezone timing, Analytics dashboard
+- ✅ Multi-platform (WhatsApp, Facebook, Instagram), voice messages, calendar export
 
 ### v2.0
-
-- ✅ Session management, Error handling & retry, Daily scheduler
-- ✅ Dry Run mode, Streamlit dashboard, Telegram & Email notifications
-- ✅ SQLite logging, Whitelist / Blacklist, Reply cooldown
+- ✅ Session management, error handling, scheduler, Streamlit dashboard, notifications
 
 ### v1.0
-
-- ✅ GitHub follower check, LinkedIn birthday wish reply (basic)
+- ✅ GitHub follower check, LinkedIn birthday wish reply
 
 ---
 
@@ -931,11 +487,13 @@ The **Real-time Wish Preview** dashboard (`wish_preview.py`) shows this score li
 4. Push: `git push origin feat/amazing-feature`
 5. Open a Pull Request
 
+All PRs must pass: `flake8 --select=E9,F63,F7,F82 *.py`
+
 ---
 
 ## 👨‍💻 Author
 
-Maintained by [Faahim Sadman](https://github.com/SadManFahIm)
+Maintained by **[Sadman Chowdhury Fahim](https://github.com/SadManFahIm)**
 
 ---
 
