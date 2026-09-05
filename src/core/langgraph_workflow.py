@@ -358,7 +358,7 @@ def node_send(state: ContactState) -> ContactState:
                    "v1.0", state.get("wish_style", "warm"),
                    state.get("personalization_score", 5))
         except Exception:
-            pass
+#             pass
 
     success = bool(result and (result.get("success") or result.get("mock")))
     log.append(f"[send] {'✅' if success else '❌'} result={success}")
@@ -894,9 +894,9 @@ else:
 
 
 
-from wish_performance_predictor import get_reply_prediction
+# from wish_performance_predictor import get_reply_prediction
 
-pred = get_reply_prediction(contact_id, contact_name, wish_text, platform, style)
-if pred["probability"] < 40:
-    # Flag for review — regenerate or restyle
-    pass
+# pred = get_reply_prediction(contact_id, contact_name, wish_text, platform, style)
+# if pred["probability"] < 40:
+#     # Flag for review — regenerate or restyle
+#     pass
