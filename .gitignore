@@ -1,9 +1,72 @@
-.env
-.venv__pycache__/
+# ═══════════════════════════════════════════════════
+# Birthday Wishes Agent — .gitignore
+# ═══════════════════════════════════════════════════
+
+# ── Python ────────────────────────────────────────
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual Environment ──────────────────────────
+.venv/
+venv/
+env/
+
+# ── Environment & Secrets ────────────────────────
+.env
+.env.local
+.env.production
+
+# ── Database ─────────────────────────────────────
+*.db
+*.sqlite3
 agent_history.db
+
+# ── Logs ─────────────────────────────────────────
+*.log
+*.log.*
+agent.log
+
+# ── Session & Browser ───────────────────────────
+linkedin_session.json
+browser_profile/
+cookies/
+
+# ── Exports & Generated ─────────────────────────
+exports/
+*.ics
+
+# ── Editor & IDE ─────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Node.js (webapp) ────────────────────────────
 webapp/node_modules/
 webapp/.next/
-*.db
-.env
+webapp/out/
+node_modules/
+
+# ── Docker ───────────────────────────────────────
+*.tar
+docker-data/
+
+# ── Misc ─────────────────────────────────────────
 *.patch
+*.bak
+*.tmp
+restructure.ps1
+cspell.json
