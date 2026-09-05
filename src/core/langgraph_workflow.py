@@ -899,3 +899,4 @@ from wish_performance_predictor import get_reply_prediction
 pred = get_reply_prediction(contact_id, contact_name, wish_text, platform, style)
 if pred["probability"] < 40:
     # Flag for review — regenerate or restyle
+    pass
