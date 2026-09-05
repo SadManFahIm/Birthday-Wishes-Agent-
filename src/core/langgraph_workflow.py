@@ -358,7 +358,7 @@ def node_send(state: ContactState) -> ContactState:
                    "v1.0", state.get("wish_style", "warm"),
                    state.get("personalization_score", 5))
         except Exception:
-#             pass
+            pass
 
     success = bool(result and (result.get("success") or result.get("mock")))
     log.append(f"[send] {'✅' if success else '❌'} result={success}")
